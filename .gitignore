@@ -1,0 +1,20 @@
+# --- DJANGO (Backend) ---
+backend/venv/
+backend/env/
+*.pyc
+__pycache__/
+backend/db.sqlite3
+backend/.env
+backend/staticfiles/
+
+# --- REACT (Frontend) ---
+frontend/node_modules/
+frontend/dist/
+frontend/build/
+frontend/.env
+frontend/.DS_Store
+
+# --- SISTEMA ---
+.DS_Store
+Thumbs.db
+.vscode/
