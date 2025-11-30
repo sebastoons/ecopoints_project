@@ -10,4 +10,5 @@ urlpatterns = [
     path('api/dashboard/', views.get_dashboard_data),
     path('api/tasks/', views.get_tasks),
     path('api/ranking/', views.get_ranking),
+    path('api/custom-task/', views.create_custom_task),
 ]

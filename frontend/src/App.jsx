@@ -7,12 +7,14 @@ import Recovery from './pages/Recovery';
 import Dashboard from './pages/Dashboard';
 import Tasks from './pages/Tasks';
 import Ranking from './pages/Ranking';
-import Profile from './pages/Profile'; // <--- IMPORTAR
+import Profile from './pages/Profile';
+import AddCustomTask from './pages/AddCustomTask'; // <--- IMPORTAR NUEVA PÁGINA
 import './App.css';
 
 const BottomNav = () => {
   const location = useLocation();
   const hideNavPaths = ['/', '/register', '/recovery'];
+  
   if (hideNavPaths.includes(location.pathname)) return null;
 
   return (
@@ -23,9 +25,14 @@ const BottomNav = () => {
       <Link to="/tasks" className={`nav-item ${location.pathname === '/tasks' ? 'active' : ''}`}>
         <ListChecks size={24} /> <span>Tareas</span>
       </Link>
+      
+      {/* Botón Central Actualizado: Lleva a /add */}
       <Link to="/add" className="nav-item">
-        <div className="nav-fab"><PlusCircle size={32} /></div>
+        <div className="nav-fab">
+          <PlusCircle size={32} />
+        </div>
       </Link>
+
       <Link to="/ranking" className={`nav-item ${location.pathname === '/ranking' ? 'active' : ''}`}>
         <Trophy size={24} /> <span>Ranking</span>
       </Link>
@@ -49,8 +56,11 @@ const AppContent = () => {
                 <Route path="/dashboard" element={<Dashboard />} />
                 <Route path="/tasks" element={<Tasks />} />
                 <Route path="/ranking" element={<Ranking />} />
-                <Route path="/add" element={<Dashboard />} />
-                <Route path="/profile" element={<Profile />} /> {/* <--- RUTA PERFIL */}
+                
+                {/* Nueva Ruta para el botón + */}
+                <Route path="/add" element={<AddCustomTask />} /> 
+                
+                <Route path="/profile" element={<Profile />} />
             </Routes>
             <BottomNav />
         </div>

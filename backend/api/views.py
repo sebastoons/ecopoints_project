@@ -3,7 +3,7 @@ from rest_framework.response import Response
 from rest_framework import status
 from django.contrib.auth.models import User
 from django.contrib.auth import authenticate
-from .models import Task, Profile
+from .models import Task, Profile, UserTask
 from .serializers import TaskSerializer, UserSerializer, UserUpdateSerializer
 
 # --- AUTENTICACIÓN ---
@@ -106,3 +106,59 @@ def get_ranking(request):
         {"id": 6, "name": "Sofía Robles", "points": 7900},
     ]
     return Response(ranking)
+
+# --- NUEVA VISTA: CREAR TAREA PROPIA ---
+
+@api_view(['POST'])
+def create_custom_task(request):
+    # 1. Identificar usuario
+    email = request.data.get('username') # Enviamos el email/user desde el front
+    material_code = request.data.get('code')
+    quantity = int(request.data.get('quantity', 1))
+    material_type = request.data.get('material_type') # 'Plástico', 'Vidrio', etc.
+
+    try:
+        user = User.objects.get(username=email)
+        profile = user.profile
+        
+        # 2. Lógica de Puntos por Material (Simulada)
+        points_per_unit = 0
+        if material_type == 'plastic':
+            points_per_unit = 10
+        elif material_type == 'glass':
+            points_per_unit = 15
+        elif material_type == 'paper':
+            points_per_unit = 5
+        elif material_type == 'metal':
+            points_per_unit = 20
+        else:
+            points_per_unit = 5 # Default
+            
+        total_points = points_per_unit * quantity
+
+        # 3. Crear o Buscar una "Tarea Genérica" en BD para registrarla
+        # Intentamos buscar una tarea con ese nombre, si no existe, la creamos temporalmente
+        task_name = f"Reciclaje: {material_type.capitalize()}"
+        task_obj, created = Task.objects.get_or_create(
+            title=task_name,
+            defaults={'points': points_per_unit, 'description': 'Tarea Propia', 'icon_type': 'recycle'}
+        )
+
+        # 4. Guardar en el Historial (UserTask)
+        UserTask.objects.create(user=user, task=task_obj)
+
+        # 5. Actualizar Puntos del Perfil
+        profile.points += total_points
+        profile.co2_saved += (quantity * 0.1) # 0.1kg por unidad (ejemplo)
+        profile.save()
+
+        return Response({
+            'success': True, 
+            'message': f'¡Has ganado {total_points} EcoPoints!',
+            'new_points': profile.points
+        })
+
+    except User.DoesNotExist:
+        return Response({'error': 'Usuario no encontrado'}, status=status.HTTP_404_NOT_FOUND)
+    except Exception as e:
+        return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)

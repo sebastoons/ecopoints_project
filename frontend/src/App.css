@@ -1,5 +1,10 @@
 /* =========================================
-   1. VARIABLES Y CONFIGURACIÓN GLOBAL
+   1. IMPORTACIÓN DE FUENTES
+   ========================================= */
+@import url('https://fonts.googleapis.com/css2?family=Changa:wght@300;400;500;600;700&family=Russo+One&display=swap');
+
+/* =========================================
+   2. VARIABLES Y CONFIGURACIÓN GLOBAL
    ========================================= */
 :root {
   /* Paleta de Colores EcoPoints */
@@ -7,28 +12,33 @@
   --primary-dark: #146f55;   /* Verde Oscuro (Hover) */
   --primary-light: #e6f7f2;  /* Fondo verde muy suave */
   --accent: #84cc16;         /* Verde Lima (Detalles) */
+  --danger: #ef4444;         /* Rojo Alerta */
   
   /* Textos y Fondos */
-  --text-main: #1f2937;      /* Gris muy oscuro (casi negro) */
+  --text-main: #1f2937;      /* Gris muy oscuro */
   --text-secondary: #6b7280; /* Gris medio */
   --bg-color: #ffffff;       /* Fondo blanco puro */
   --bg-dashboard: #f8fafc;   /* Fondo gris muy claro para dashboard */
   --gray-border: #e5e7eb;    /* Bordes sutiles */
   
   /* Propiedades UI */
-  --radius: 12px;            /* Redondeo de botones y tarjetas */
-  --font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  --radius: 12px;            /* Redondeo estándar */
   --shadow-sm: 0 1px 3px rgba(0,0,0,0.05);
   --shadow-fab: 0 4px 10px rgba(30, 168, 128, 0.4);
+  
+  /* Fuentes Personalizadas */
+  --font-heading: 'Russo One', sans-serif; /* Títulos impactantes */
+  --font-text: 'Changa', sans-serif;       /* Texto general moderno */
 }
 
 body {
   margin: 0;
   padding: 0;
-  font-family: var(--font-family);
-  background-color: #f0f2f5; /* Fondo de la ventana del navegador */
+  font-family: var(--font-text);
+  background-color: #f0f2f5; /* Fondo general del navegador */
   color: var(--text-main);
   -webkit-font-smoothing: antialiased;
+  font-weight: 400;
 }
 
 * {
@@ -36,32 +46,105 @@ body {
 }
 
 /* =========================================
-   2. LAYOUT PRINCIPAL (Simulación Móvil)
+   3. LAYOUT PRINCIPAL (Tarjeta Centrada)
    ========================================= */
 .app-container {
-  max-width: 480px;          /* Ancho máximo tipo celular */
-  margin: 0 auto;            /* Centrado en pantalla grande */
-  min-height: 100vh;
+  max-width: 480px;
+  /* Centrado vertical y horizontal con márgenes (Efecto Tarjeta) */
+  margin: 40px auto; 
+  min-height: calc(100vh - 80px); 
+  border-radius: 24px; 
   background-color: var(--bg-color);
   position: relative;
   display: flex;
   flex-direction: column;
-  box-shadow: 0 0 20px rgba(0,0,0,0.05); /* Sombra suave a los lados */
+  box-shadow: 0 10px 40px rgba(0,0,0,0.1);
+  overflow: hidden; /* Mantiene el contenido dentro de los bordes redondeados */
 }
 
-/* Modificador para páginas con menú inferior */
+/* Ajuste Responsivo: En celulares reales ocupa toda la pantalla */
+@media (max-width: 480px) {
+  .app-container {
+    margin: 0;
+    min-height: 100vh;
+    border-radius: 0;
+    box-shadow: none;
+  }
+}
+
 .app-container.with-nav {
-  padding-bottom: 80px;      /* Espacio para que el navbar no tape contenido */
+  padding-bottom: 80px; /* Espacio para navbar inferior */
   background-color: var(--bg-dashboard);
 }
 
 .page-content {
   padding: 24px 20px;
   width: 100%;
+  flex: 1; /* Empuja el contenido para llenar el espacio */
 }
 
 /* =========================================
-   3. ESTILOS DE AUTENTICACIÓN (Login/Registro)
+   4. HEADER SUPERIOR
+   ========================================= */
+.app-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 20px;
+  background-color: var(--bg-color);
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  border-bottom: 1px solid var(--gray-border);
+}
+
+.header-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.header-logo {
+  height: 36px;
+  width: auto;
+  object-fit: contain;
+}
+
+.header-title {
+  font-family: var(--font-heading);
+  font-size: 1.2rem;
+  color: var(--text-main);
+  margin: 0;
+  letter-spacing: 0.5px;
+}
+
+.header-right {
+  display: flex;
+  align-items: center;
+}
+
+.notification-btn {
+  position: relative;
+  padding: 8px;
+  background-color: var(--bg-dashboard);
+  border-radius: 50%;
+  color: var(--text-secondary);
+  cursor: pointer;
+}
+
+.notification-dot {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  width: 8px;
+  height: 8px;
+  background-color: var(--danger);
+  border-radius: 50%;
+  border: 1px solid white;
+}
+
+/* =========================================
+   5. ESTILOS DE AUTENTICACIÓN
    ========================================= */
 .auth-container {
   padding: 40px 24px;
@@ -77,40 +160,40 @@ body {
   margin-bottom: 30px;
 }
 
-/* Nueva clase para el logo en Login/Registro/Recuperar */
 .auth-logo-img {
-  width: 100px;        /* Tamaño ajustable */
-  height: 100px;
-  object-fit: contain; /* Mantiene la proporción */
-  margin: 0 auto 15px auto;
+  width: 300px;
+  height: 300px;
+  object-fit: contain;
+  margin: 0 auto 10px auto;
   display: block;
 }
 
 .app-title {
-  font-size: 2rem;
+  font-family: var(--font-heading);
+  font-size: 1.5em;
   color: var(--primary-dark);
-  font-weight: 800;
-  margin: 0;
+  margin: 0 auto 0 auto;
+  letter-spacing: 1.5px;
 }
 
 .page-title {
+  font-family: var(--font-heading);
   font-size: 1.5rem;
-  font-weight: 600;
+  color: var(--text-main);
   text-align: center;
   margin-bottom: 10px;
-  color: var(--text-main);
 }
 
 .page-subtitle {
   text-align: center;
   color: var(--text-secondary);
-  font-size: 0.9rem;
+  font-size: 0.95rem;
   margin-bottom: 30px;
   line-height: 1.5;
 }
 
 /* =========================================
-   4. FORMULARIOS E INPUTS
+   6. FORMULARIOS E INPUTS
    ========================================= */
 .form-group {
   margin-bottom: 16px;
@@ -137,15 +220,16 @@ body {
   top: 50%;
   transform: translateY(-50%);
   color: #9ca3af;
-  pointer-events: none; /* Para que el click pase al input */
+  pointer-events: none;
 }
 
 .form-input {
   width: 100%;
-  padding: 14px 16px 14px 48px; /* Padding izquierdo extra para el icono */
+  padding: 14px 16px 14px 48px;
   border: 1px solid var(--gray-border);
   border-radius: var(--radius);
   font-size: 1rem;
+  font-family: var(--font-text);
   outline: none;
   transition: border-color 0.2s, box-shadow 0.2s;
   background-color: #fff;
@@ -157,15 +241,27 @@ body {
   box-shadow: 0 0 0 3px var(--primary-light);
 }
 
+/* Select personalizado */
+.select-input {
+  /* Hereda estilos de .form-input si se aplica la clase, 
+     pero esto asegura la flecha custom */
+  appearance: none;
+  background-image: url("data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%231ea880%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.5-12.8z%22%2F%3E%3C%2Fsvg%3E");
+  background-repeat: no-repeat;
+  background-position: right 16px top 50%;
+  background-size: 12px auto;
+}
+
 /* =========================================
-   5. BOTONES
+   7. BOTONES
    ========================================= */
 .btn {
   width: 100%;
   padding: 14px;
   border-radius: var(--radius);
   font-weight: 600;
-  font-size: 1rem;
+  font-family: var(--font-text);
+  font-size: 1.05rem;
   border: none;
   cursor: pointer;
   transition: all 0.2s ease;
@@ -173,11 +269,13 @@ body {
   align-items: center;
   justify-content: center;
   gap: 8px;
+  letter-spacing: 0.5px;
 }
 
 .btn-primary {
   background-color: var(--primary);
   color: white;
+  box-shadow: 0 4px 6px rgba(30, 168, 128, 0.2);
 }
 
 .btn-primary:hover {
@@ -189,7 +287,17 @@ body {
   transform: translateY(0);
 }
 
-/* Toggle Buttons (Selector Admin/Usuario) */
+.btn-danger {
+  background-color: #fee2e2;
+  color: #dc2626;
+  border: 1px solid #fca5a5;
+}
+
+.btn-danger:hover {
+  background-color: #fecaca;
+}
+
+/* Selector Admin/Usuario */
 .btn-toggle-group {
   display: flex;
   gap: 10px;
@@ -205,12 +313,14 @@ body {
   background: white;
   color: var(--text-secondary);
   font-weight: 500;
+  font-family: var(--font-text);
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 6px;
   transition: all 0.2s;
+  font-size: 0.9em;
 }
 
 .btn-toggle.active {
@@ -225,13 +335,11 @@ body {
   background: var(--primary-light);
 }
 
-/* =========================================
-   6. FOOTER Y LINKS
-   ========================================= */
+/* Links */
 .auth-footer {
   text-align: center;
   margin-top: 30px;
-  font-size: 0.9rem;
+  font-size: 0.95rem;
   color: var(--text-secondary);
 }
 
@@ -247,19 +355,19 @@ body {
 }
 
 /* =========================================
-   7. COMPONENTES DEL DASHBOARD
+   8. DASHBOARD & COMPONENTES
    ========================================= */
 .section-title {
-  font-size: 1.5rem;
-  font-weight: 700;
+  font-family: var(--font-heading);
+  font-size: 1.4rem;
   color: var(--text-main);
   margin-bottom: 20px;
   display: flex;
   align-items: center;
   gap: 10px;
+  letter-spacing: 0.5px;
 }
 
-/* Tarjetas (Cards) */
 .card {
   background: white;
   border-radius: 16px;
@@ -269,7 +377,7 @@ body {
   border: 1px solid #f0f0f0;
 }
 
-/* Estadísticas (Stats) */
+/* Estadísticas */
 .stats-row {
   display: flex;
   justify-content: space-between;
@@ -290,11 +398,18 @@ body {
 }
 
 .stat-number {
-  font-size: 2rem;
-  font-weight: 800;
+  font-family: var(--font-heading);
+  font-size: 2.2rem;
   color: var(--primary-dark);
   line-height: 1;
   margin-bottom: 4px;
+}
+
+/* Gráfico */
+.chart-container {
+  width: 100%;
+  height: 250px; /* Altura fija para evitar errores de renderizado */
+  position: relative;
 }
 
 /* Barra de Progreso */
@@ -315,17 +430,18 @@ body {
 }
 
 .level-badge {
+  font-family: var(--font-heading);
   background: var(--primary-dark);
   color: white;
   padding: 4px 12px;
   border-radius: 20px;
   font-size: 0.8rem;
-  font-weight: bold;
+  letter-spacing: 0.5px;
   display: inline-block;
 }
 
 /* =========================================
-   8. LISTAS (TAREAS Y RANKING)
+   9. LISTAS (Tareas y Ranking)
    ========================================= */
 .list-item {
   display: flex;
@@ -353,7 +469,7 @@ body {
 
 .item-content {
   flex: 1;
-  overflow: hidden; /* Evita desbordamientos de texto */
+  overflow: hidden;
 }
 
 .item-title {
@@ -375,13 +491,12 @@ body {
   gap: 4px;
 }
 
-/* Ranking Específico */
 .ranking-pos {
   width: 30px;
-  font-weight: bold;
+  font-family: var(--font-heading);
+  font-size: 1.2rem;
   color: #d1d5db;
   text-align: center;
-  font-size: 1.1rem;
   flex-shrink: 0;
 }
 
@@ -404,124 +519,7 @@ body {
 }
 
 /* =========================================
-   9. BARRA DE NAVEGACIÓN INFERIOR
-   ========================================= */
-.bottom-nav {
-  position: fixed;
-  bottom: 0;
-  left: 50%;
-  transform: translateX(-50%); /* Centrado relativo al padre */
-  width: 100%;
-  max-width: 480px;
-  height: 70px;
-  background: white;
-  border-top: 1px solid var(--gray-border);
-  display: flex;
-  justify-content: space-around;
-  align-items: center;
-  z-index: 100;
-  box-shadow: 0 -2px 10px rgba(0,0,0,0.03);
-}
-
-.nav-item {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  color: #9ca3af;
-  text-decoration: none;
-  font-size: 0.75rem;
-  gap: 4px;
-  padding: 8px;
-  flex: 1;
-  transition: color 0.2s;
-}
-
-.nav-item.active {
-  color: var(--primary);
-}
-
-/* Botón flotante central (+ Agregar) */
-.nav-fab {
-  background: var(--primary);
-  width: 56px;
-  height: 56px;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: white;
-  margin-top: -30px; /* Eleva el botón fuera del navbar */
-  box-shadow: var(--shadow-fab);
-  border: 4px solid var(--bg-dashboard); /* Borde del color de fondo para efecto de corte */
-  transition: transform 0.2s;
-}
-
-.nav-fab:active {
-  transform: scale(0.95);
-}
-
-/* =========================================
-   10. HEADER SUPERIOR (Nuevo)
-   ========================================= */
-.app-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 12px 20px; /* Un poco menos de padding vertical */
-  background-color: var(--bg-color);
-  position: sticky;
-  top: 0;
-  z-index: 50;
-  border-bottom: 1px solid var(--gray-border);
-}
-
-.header-left {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-
-/* Estilo para el logo pequeño del header */
-.header-logo {
-  height: 40px;        /* Altura fija para el header */
-  width: auto;         /* Ancho automático */
-  object-fit: contain;
-}
-
-.header-title {
-  font-size: 1.1rem;
-  font-weight: 700;
-  color: var(--text-main);
-  margin: 0;
-}
-
-.header-right {
-  display: flex;
-  align-items: center;
-}
-
-.notification-btn {
-  position: relative;
-  padding: 8px;
-  background-color: var(--bg-dashboard);
-  border-radius: 50%;
-  color: var(--text-secondary);
-  cursor: pointer;
-}
-
-.notification-dot {
-  position: absolute;
-  top: 8px;
-  right: 8px;
-  width: 8px;
-  height: 8px;
-  background-color: #ef4444; /* Rojo */
-  border-radius: 50%;
-  border: 1px solid white;
-}
-
-/* =========================================
-   11. PERFIL (Edición)
+   10. PERFIL Y ESCÁNER
    ========================================= */
 .profile-avatar-section {
   display: flex;
@@ -540,27 +538,121 @@ body {
 }
 
 .profile-name {
-  font-size: 1.25rem;
-  font-weight: 700;
+  font-family: var(--font-heading);
+  font-size: 1.4rem;
   color: var(--text-main);
 }
 
-.profile-email {
-  font-size: 0.9rem;
-  color: var(--text-secondary);
-}
-
-.btn-danger {
-  background-color: #fee2e2;
-  color: #dc2626;
-}
-
-.btn-danger:hover {
-  background-color: #fecaca;
-}
-
-.chart-container {
+/* Estilos del Escáner */
+.scanner-container {
+  background-color: #000;
+  height: 250px;
   width: 100%;
-  height: 250px; /* Altura fija obligatoria */
+  border-radius: 16px;
   position: relative;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 20px;
+  border: 2px solid var(--gray-border);
+}
+
+.scanner-active {
+  border: 2px solid var(--accent);
+  box-shadow: 0 0 15px rgba(132, 204, 22, 0.5);
+}
+
+.scan-line {
+  position: absolute;
+  width: 100%;
+  height: 2px;
+  background: var(--accent);
+  box-shadow: 0 0 4px var(--accent);
+  top: 0;
+  z-index: 2;
+  animation: scan 2s infinite linear;
+}
+
+@keyframes scan {
+  0% { top: 10%; opacity: 0; }
+  50% { opacity: 1; }
+  100% { top: 90%; opacity: 0; }
+}
+
+.scan-btn-overlay {
+  position: absolute;
+  z-index: 3;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  color: white;
+}
+
+/* =========================================
+   11. BARRA DE NAVEGACIÓN INFERIOR
+   ========================================= */
+.bottom-nav {
+  position: fixed;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 100%;
+  max-width: 480px;
+  height: 70px;
+  background: white;
+  border-top: 1px solid var(--gray-border);
+  display: flex;
+  justify-content: space-around;
+  align-items: center;
+  z-index: 100;
+  box-shadow: 0 -2px 10px rgba(0,0,0,0.03);
+  /* Bordes redondeados inferiores para coincidir con el container */
+  border-bottom-left-radius: 24px;
+  border-bottom-right-radius: 24px;
+}
+
+@media (max-width: 480px) {
+  .bottom-nav {
+    border-radius: 0; /* En móvil real es cuadrado abajo */
+  }
+}
+
+.nav-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  color: #9ca3af;
+  text-decoration: none;
+  font-size: 0.75rem;
+  gap: 4px;
+  padding: 8px;
+  flex: 1;
+  transition: color 0.2s;
+  font-family: var(--font-text);
+  font-weight: 500;
+}
+
+.nav-item.active {
+  color: var(--primary);
+  font-weight: 700;
+}
+
+.nav-fab {
+  background: var(--primary);
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  margin-top: -30px;
+  box-shadow: var(--shadow-fab);
+  border: 4px solid var(--bg-dashboard);
+  transition: transform 0.2s;
+}
+
+.nav-fab:active {
+  transform: scale(0.95);
 }

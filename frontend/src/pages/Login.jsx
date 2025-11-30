@@ -31,11 +31,11 @@ const Login = () => {
       <div className="logo-area">
         {/* LOGO GRANDE DEL LOGIN */}
         <img 
-          src="../../logos/logo_simple.svg" 
+          src="../../logos/logo_completo.svg" 
           alt="EcoPoints Logo" 
           className="auth-logo-img" 
         />
-        <h1 className="app-title">Eco<span style={{color: 'var(--accent)'}}>Points</span></h1>
+        <h1 className="app-title">Iniciar Sesión<span style={{color: 'var(--accent)'}}></span></h1>
       </div>
 
       <div className="btn-toggle-group">
