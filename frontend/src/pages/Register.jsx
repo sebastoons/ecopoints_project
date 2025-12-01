@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import axios from 'axios';
+import api from '../api'; // Importante: Usamos nuestra configuración de API
 import { User, Mail, Lock } from 'lucide-react';
 
 const Register = () => {
@@ -18,7 +18,8 @@ const Register = () => {
       return;
     }
     try {
-      const response = await axios.post('http://127.0.0.1:8000/api/register/', {
+      // Enviamos los datos al backend en la nube
+      const response = await api.post('/api/register/', {
         name: formData.name, email: formData.email, password: formData.password
       });
       if (response.data.success) {
@@ -33,9 +34,8 @@ const Register = () => {
   return (
     <div className="auth-container">
       <div className="logo-area" style={{marginBottom: '20px'}}>
-        {/* LOGO REGISTRO */}
         <img 
-          src="../../logos/logo-auth.png" 
+          src="/logos/logo-auth.png" 
           alt="EcoPoints" 
           className="auth-logo-img" 
         />

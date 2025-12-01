@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import axios from 'axios';
+import api from '../api'; // Importante: Usamos nuestra configuración de API
 import { User, Lock, Mail, ShieldCheck } from 'lucide-react';
 
 const Login = () => {
@@ -15,13 +15,14 @@ const Login = () => {
     e.preventDefault();
     setError('');
     try {
-      const response = await axios.post('http://127.0.0.1:8000/api/login/', formData);
+      // Usamos api.post en lugar de axios directo para usar la URL de la nube
+      const response = await api.post('/api/login/', formData);
       if (response.data.success) {
         localStorage.setItem('user', response.data.username);
         navigate('/dashboard');
       }
-    // eslint-disable-next-line no-unused-vars
     } catch (err) {
+      console.error(err);
       setError('Correo o contraseña incorrectos.');
     }
   };
@@ -29,13 +30,13 @@ const Login = () => {
   return (
     <div className="auth-container">
       <div className="logo-area">
-        {/* LOGO GRANDE DEL LOGIN */}
+        {/* Ruta absoluta para que funcione en cualquier dispositivo */}
         <img 
-          src="../../logos/logo_completo.svg" 
+          src="/logos/logo_completo.svg" 
           alt="EcoPoints Logo" 
           className="auth-logo-img" 
         />
-        <h1 className="app-title">Iniciar Sesión<span style={{color: 'var(--accent)'}}></span></h1>
+        <h1 className="app-title">Iniciar Sesión</h1>
       </div>
 
       <div className="btn-toggle-group">
