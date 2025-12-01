@@ -8,7 +8,7 @@ import Dashboard from './pages/Dashboard';
 import Tasks from './pages/Tasks';
 import Ranking from './pages/Ranking';
 import Profile from './pages/Profile';
-import AddCustomTask from './pages/AddCustomTask'; // <--- IMPORTAR NUEVA PÁGINA
+import AddCustomTask from './pages/AddCustomTask';
 import './App.css';
 
 const BottomNav = () => {
@@ -26,7 +26,6 @@ const BottomNav = () => {
         <ListChecks size={24} /> <span>Tareas</span>
       </Link>
       
-      {/* Botón Central Actualizado: Lleva a /add */}
       <Link to="/add" className="nav-item">
         <div className="nav-fab">
           <PlusCircle size={32} />
@@ -47,8 +46,11 @@ const AppContent = () => {
     const location = useLocation();
     const isAuthPage = ['/', '/register', '/recovery'].includes(location.pathname);
 
+    // Clase dinámica: 'auth-mode' (angosto) vs 'app-mode' (ancho)
+    const containerClass = isAuthPage ? 'auth-mode' : 'app-mode with-nav';
+
     return (
-        <div className={`app-container ${!isAuthPage ? 'with-nav' : ''}`}>
+        <div className={`app-container ${containerClass}`}>
             <Routes>
                 <Route path="/" element={<Login />} />
                 <Route path="/register" element={<Register />} />
@@ -56,10 +58,7 @@ const AppContent = () => {
                 <Route path="/dashboard" element={<Dashboard />} />
                 <Route path="/tasks" element={<Tasks />} />
                 <Route path="/ranking" element={<Ranking />} />
-                
-                {/* Nueva Ruta para el botón + */}
                 <Route path="/add" element={<AddCustomTask />} /> 
-                
                 <Route path="/profile" element={<Profile />} />
             </Routes>
             <BottomNav />
