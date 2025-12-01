@@ -162,13 +162,16 @@ def get_tasks(request):
 
 @api_view(['GET'])
 def get_ranking(request):
-    profiles = Profile.objects.select_related('user').order_by('-points')[:10]
+    profiles = Profile.objects.select_related('user').order_by('-points')
+    
     ranking_data = []
     for p in profiles:
         ranking_data.append({
             "id": p.user.id,
-            "name": p.user.first_name or "Anónimo",
-            "points": p.points
+            "name": p.user.first_name if p.user.first_name else p.user.username.split('@')[0],
+            "username": p.user.username, # <--- CAMPO NUEVO IMPORTANTE
+            "points": p.points,
+            "level": p.level
         })
     return Response(ranking_data)
 
