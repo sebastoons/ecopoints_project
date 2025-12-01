@@ -1,9 +1,15 @@
 import os
 from pathlib import Path
+import dj_database_url # Nueva librería para leer la BD de Railway
 
 BASE_DIR = Path(__file__).resolve().parent.parent
-SECRET_KEY = 'django-insecure-clave-secreta-para-desarrollo-local'
-DEBUG = True
+
+# SEGURIDAD: En producción usamos la clave de entorno, en local una por defecto
+SECRET_KEY = os.environ.get('SECRET_KEY', 'django-insecure-clave-secreta-local')
+
+# DEBUG: False en producción, True en local
+DEBUG = 'RENDER' not in os.environ and 'RAILWAY_ENVIRONMENT' not in os.environ
+
 ALLOWED_HOSTS = ['*']
 
 INSTALLED_APPS = [
@@ -14,13 +20,14 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'rest_framework',
-    'corsheaders', # Necesario para conectar con React
+    'corsheaders',
     'api',
 ]
 
 MIDDLEWARE = [
-    'corsheaders.middleware.CorsMiddleware', # Debe ser el primero o de los primeros
+    'corsheaders.middleware.CorsMiddleware',
     'django.middleware.security.SecurityMiddleware',
+    'whitenoise.middleware.WhiteNoiseMiddleware', # Para archivos estáticos en prod (opcional pero recomendado)
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -29,7 +36,13 @@ MIDDLEWARE = [
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
 
-CORS_ALLOW_ALL_ORIGINS = True # Permite todas las conexiones en modo dev
+# Configuración CORS y CSRF para producción
+CORS_ALLOW_ALL_ORIGINS = True
+CSRF_TRUSTED_ORIGINS = [
+    'https://*.railway.app',
+    'https://*.netlify.app',
+    'http://localhost:5173',
+]
 
 ROOT_URLCONF = 'core.urls'
 
@@ -51,11 +64,13 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'core.wsgi.application'
 
+# --- BASE DE DATOS INTELIGENTE ---
+# Si existe DATABASE_URL (Railway), usa PostgreSQL. Si no, usa SQLite (Local).
 DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
-    }
+    'default': dj_database_url.config(
+        default='sqlite:///' + str(BASE_DIR / 'db.sqlite3'),
+        conn_max_age=600
+    )
 }
 
 AUTH_PASSWORD_VALIDATORS = []
@@ -64,5 +79,7 @@ LANGUAGE_CODE = 'es-cl'
 TIME_ZONE = 'America/Santiago'
 USE_I18N = True
 USE_TZ = True
+
 STATIC_URL = 'static/'
+STATIC_ROOT = BASE_DIR / 'staticfiles'
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
