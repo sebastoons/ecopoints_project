@@ -147,12 +147,13 @@ body {
    5. ESTILOS DE AUTENTICACIÓN
    ========================================= */
 .auth-container {
-  padding: 40px 24px;
+  padding: 20px 40px;
   flex: 1;
   display: flex;
   flex-direction: column;
   justify-content: center;
   background-color: var(--bg-color);
+  margin-top: -60px;
 }
 
 .logo-area {
@@ -164,16 +165,17 @@ body {
   width: 300px;
   height: 300px;
   object-fit: contain;
-  margin: 0 auto 10px auto;
+  margin: -30px auto -30px auto;
   display: block;
 }
 
 .app-title {
   font-family: var(--font-heading);
-  font-size: 1.5em;
+  font-size: 1.4em;
   color: var(--primary-dark);
   margin: 0 auto 0 auto;
   letter-spacing: 1.5px;
+  text-transform: uppercase;
 }
 
 .page-title {
@@ -225,10 +227,10 @@ body {
 
 .form-input {
   width: 100%;
-  padding: 14px 16px 14px 48px;
+  padding: 8px 8px 8px 50px;
   border: 1px solid var(--gray-border);
   border-radius: var(--radius);
-  font-size: 1rem;
+  font-size: 0.85em;
   font-family: var(--font-text);
   outline: none;
   transition: border-color 0.2s, box-shadow 0.2s;
@@ -257,11 +259,12 @@ body {
    ========================================= */
 .btn {
   width: 100%;
-  padding: 14px;
+  padding: 10px;
   border-radius: var(--radius);
   font-weight: 600;
   font-family: var(--font-text);
-  font-size: 1.05rem;
+  font-size: 1em;
+  text-transform: uppercase;
   border: none;
   cursor: pointer;
   transition: all 0.2s ease;
@@ -300,27 +303,28 @@ body {
 /* Selector Admin/Usuario */
 .btn-toggle-group {
   display: flex;
-  gap: 10px;
-  margin-bottom: 30px;
+  gap: 5px;
+  margin-bottom: 20px;
   width: 100%;
 }
 
 .btn-toggle {
   flex: 1;
-  padding: 12px;
+  padding: 7px;
   border-radius: var(--radius);
   border: 1px solid var(--gray-border);
   background: white;
   color: var(--text-secondary);
   font-weight: 500;
   font-family: var(--font-text);
+  text-transform: uppercase;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 6px;
   transition: all 0.2s;
-  font-size: 0.9em;
+  font-size: 0.85em;
 }
 
 .btn-toggle.active {
@@ -338,9 +342,9 @@ body {
 /* Links */
 .auth-footer {
   text-align: center;
-  margin-top: 30px;
-  font-size: 0.95rem;
-  color: var(--text-secondary);
+  margin-top: 20px;
+  font-size: 0.8em;
+  color: #737373;
 }
 
 .link {

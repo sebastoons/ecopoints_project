@@ -32,7 +32,7 @@ const Login = () => {
       <div className="logo-area">
         {/* Ruta absoluta para que funcione en cualquier dispositivo */}
         <img 
-          src="/logos/logo_completo.svg" 
+          src="/logos/logo-auth.png" 
           alt="EcoPoints Logo" 
           className="auth-logo-img" 
         />
