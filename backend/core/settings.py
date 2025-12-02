@@ -83,3 +83,6 @@ USE_TZ = True
 STATIC_URL = 'static/'
 STATIC_ROOT = BASE_DIR / 'staticfiles'
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+# --- CONFIGURACIÓN DE CORREO (Imprimir en consola para desarrollo) ---
+EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
