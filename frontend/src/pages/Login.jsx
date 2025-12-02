@@ -1,41 +1,40 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import api from '../api'; // Importante: Usamos nuestra configuración de API
+import api from '../api'; 
+import { useToast } from '../context/ToastContext'; // <--- Importamos el hook
 import { User, Lock, Mail, ShieldCheck } from 'lucide-react';
 
 const Login = () => {
   const navigate = useNavigate();
+  const { showToast } = useToast(); // <--- Inicializamos
   const [role, setRole] = useState('user');
   const [formData, setFormData] = useState({ email: '', password: '' });
-  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
 
   const handleChange = (e) => setFormData({ ...formData, [e.target.name]: e.target.value });
 
   const handleLogin = async (e) => {
     e.preventDefault();
-    setError('');
+    setLoading(true);
     try {
-      // Usamos api.post en lugar de axios directo para usar la URL de la nube
       const response = await api.post('/api/login/', formData);
       if (response.data.success) {
         localStorage.setItem('user', response.data.username);
+        showToast(`¡Hola de nuevo, ${response.data.name || 'Usuario'}!`, "success"); // Mensaje Toast
         navigate('/dashboard');
       }
     } catch (err) {
       console.error(err);
-      setError('Correo o contraseña incorrectos.');
+      showToast("Credenciales incorrectas. Intenta de nuevo.", "error"); // Mensaje Toast
+    } finally {
+      setLoading(false);
     }
   };
 
   return (
     <div className="auth-container">
       <div className="logo-area">
-        {/* Ruta absoluta para que funcione en cualquier dispositivo */}
-        <img 
-          src="/logos/logo-auth.png" 
-          alt="EcoPoints Logo" 
-          className="auth-logo-img" 
-        />
+        <img src="/logos/logo_completo.svg" alt="EcoPoints" className="auth-logo-img" />
         <h1 className="app-title">Iniciar Sesión</h1>
       </div>
 
@@ -61,8 +60,10 @@ const Login = () => {
                 <input type="password" name="password" placeholder="Contraseña" className="form-input" onChange={handleChange} required />
             </div>
         </div>
-        {error && <div style={{color: '#ef4444', fontSize: '0.9rem', marginBottom: '10px', textAlign: 'center'}}>{error}</div>}
-        <button type="submit" className="btn btn-primary" style={{marginTop: '10px'}}>Iniciar Sesión</button>
+        
+        <button type="submit" className="btn btn-primary" disabled={loading} style={{marginTop: '10px'}}>
+          {loading ? 'Ingresando...' : 'Iniciar Sesión'}
+        </button>
       </form>
 
       <div className="auth-footer">

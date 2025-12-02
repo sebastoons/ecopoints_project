@@ -9,7 +9,9 @@ import Tasks from './pages/Tasks';
 import Ranking from './pages/Ranking';
 import Profile from './pages/Profile';
 import AddCustomTask from './pages/AddCustomTask';
+import { ToastProvider } from './context/ToastContext';
 import './App.css';
+
 
 const BottomNav = () => {
   const location = useLocation();
@@ -68,10 +70,11 @@ const AppContent = () => {
 
 function App() {
   return (
-    <Router>
-      <AppContent />
-    </Router>
+    <ToastProvider> 
+      <Router>
+        <AppContent />
+      </Router>
+    </ToastProvider>
   );
 }
-
 export default App;

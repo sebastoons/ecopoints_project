@@ -671,3 +671,48 @@ body {
 .nav-fab:active {
   transform: scale(0.95);
 }
+
+/* =========================================
+   12. TOAST NOTIFICATIONS (Estilo Nativo)
+   ========================================= */
+.custom-toast {
+  position: fixed;
+  top: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 90%;
+  max-width: 400px;
+  padding: 16px;
+  border-radius: 16px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.15);
+  z-index: 9999;
+  animation: slideDown 0.3s ease-out;
+  font-family: var(--font-text);
+  font-weight: 600;
+}
+
+@keyframes slideDown {
+  from { top: -100px; opacity: 0; }
+  to { top: 20px; opacity: 1; }
+}
+
+.toast-success {
+  background-color: #ecfdf5; /* Fondo verde muy claro */
+  border: 1px solid var(--primary);
+  color: var(--primary-dark);
+}
+
+.toast-error {
+  background-color: #fef2f2; /* Fondo rojo muy claro */
+  border: 1px solid var(--danger);
+  color: #991b1b;
+}
+
+.toast-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
