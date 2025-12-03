@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import api from '../api'; 
 import { useToast } from '../context/ToastContext';
@@ -11,13 +11,27 @@ const Login = () => {
   const [formData, setFormData] = useState({ email: '', password: '' });
   const [loading, setLoading] = useState(false);
 
+  // --- LIMPIEZA OBLIGATORIA AL CARGAR LA PANTALLA ---
+  useEffect(() => {
+      // Esto elimina el token "fantasma" que causa el error 401
+      localStorage.removeItem('token');
+      localStorage.removeItem('user');
+      localStorage.removeItem('isAdmin');
+  }, []);
+
   const handleChange = (e) => setFormData({ ...formData, [e.target.name]: e.target.value });
 
   const handleLogin = async (e) => {
     e.preventDefault();
     setLoading(true);
     try {
-      const response = await api.post('/api/login/', formData);
+      // Normalizamos el email para evitar errores de tipeo
+      const payload = {
+          email: formData.email.trim().toLowerCase(),
+          password: formData.password
+      };
+
+      const response = await api.post('/api/login/', payload);
       
       if (response.data.success) {
         localStorage.setItem('token', response.data.access);
@@ -25,14 +39,13 @@ const Login = () => {
         const isAdmin = response.data.is_staff;
         localStorage.setItem('isAdmin', isAdmin); 
 
-        // NUEVA LÓGICA: Cambio de contraseña forzado
         if (response.data.must_change_password) {
-            showToast("⚠️ Debes cambiar tu contraseña temporal por seguridad.", "info");
+            showToast("⚠️ Por seguridad, cambia tu contraseña.", "info");
             navigate('/profile?forceChange=true'); 
-            return; // Detenemos aquí para no redirigir a dashboard
+            return;
         }
 
-        showToast(`¡Hola de nuevo, ${response.data.name || 'Usuario'}!`, "success");
+        showToast(`¡Hola de nuevo, ${response.data.name}!`, "success");
         
         if (isAdmin && role === 'admin') {
             navigate('/admin-dashboard'); 
@@ -41,8 +54,9 @@ const Login = () => {
         }
       }
     } catch (err) {
-      console.error("Error de login:", err);
-      showToast("Credenciales incorrectas. Intenta de nuevo.", "error");
+      console.error(err);
+      const msg = err.response?.data?.error || "Error de conexión o credenciales.";
+      showToast(msg, "error");
     } finally {
       setLoading(false);
     }
