@@ -1,35 +1,29 @@
 import React, { useState, useEffect } from 'react';
 import api from '../api';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { User, Mail, Save, LogOut, Lock, AlertTriangle } from 'lucide-react';
 import Header from '../components/Header';
 import { useToast } from '../context/ToastContext';
 
 const Profile = () => {
   const navigate = useNavigate();
-  const location = useLocation();
   const { showToast } = useToast();
   const [loading, setLoading] = useState(true);
   const [userData, setUserData] = useState({ first_name: '', email: '', profile: { points: 0, level: '' }});
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   
-  // CORRECCIÓN: Inicializamos el estado leyendo la URL directamente.
-  // Esto soluciona el error de la línea 25 y evita el renderizado en cascada.
-  const [forceChange, setForceChange] = useState(() => {
-      const params = new URLSearchParams(location.search);
-      return params.get('forceChange') === 'true';
-  });
-
-  const currentUserEmail = localStorage.getItem('user');
+  // --- CAMBIO: LEER DE SESSIONSTORAGE ---
+  const currentUserEmail = sessionStorage.getItem('user');
+  const forceChange = sessionStorage.getItem('forceChange') === 'true';
 
   useEffect(() => {
-    if (!currentUserEmail) { navigate('/'); return; }
+    if (!currentUserEmail) { 
+        navigate('/'); 
+        return; 
+    }
     
-    // La lógica de detección de 'forceChange' ya se manejó en el useState inicial.
-    // Aquí solo cargamos los datos del perfil.
-
-    api.get(`/api/profile/?email=${currentUserEmail}`)
+    api.get('/api/profile/')
       .then(res => { setUserData(res.data); setLoading(false); })
       .catch(err => { console.error(err); setLoading(false); });
   }, [currentUserEmail, navigate]);
@@ -42,7 +36,6 @@ const Profile = () => {
     }
     try {
       const payload = {
-          username: currentUserEmail,
           first_name: userData.first_name,
           email: userData.email,
       };
@@ -52,14 +45,9 @@ const Profile = () => {
       
       if (res.data.success) {
         showToast("Perfil actualizado correctamente", "success");
-        setNewPassword(''); 
-        setConfirmPassword('');
-
-        // LIBERAR AL USUARIO
-        setForceChange(false);
-        localStorage.removeItem('forceChange'); // <--- IMPORTANTE: Borrar la marca del localStorage
-
-        navigate('/dashboard'); // Ahora sí lo dejamos ir al inicio
+        setNewPassword(''); setConfirmPassword('');
+        sessionStorage.removeItem('forceChange'); // Liberar bloqueo
+        navigate('/dashboard'); // Redirigir al dashboard al guardar
       }
     } catch (err) {
       console.error(err);
@@ -68,9 +56,7 @@ const Profile = () => {
   };
 
   const handleLogout = () => {
-    localStorage.removeItem('user');
-    localStorage.removeItem('token');
-    localStorage.removeItem('isAdmin');
+    sessionStorage.clear();
     navigate('/');
   };
 
@@ -81,12 +67,11 @@ const Profile = () => {
       <Header title="Mi Perfil" />
       <div className="page-content">
         
-        {/* ALERTA DE SEGURIDAD */}
         {forceChange && (
             <div style={{background:'#fff7ed', border:'1px solid #fdba74', padding:'15px', borderRadius:'12px', marginBottom:'20px', display:'flex', gap:'10px', alignItems:'center'}}>
                 <AlertTriangle color="#c2410c" />
                 <div style={{color:'#9a3412', fontSize:'0.9rem'}}>
-                    <strong>Acción Requerida:</strong> Por tu seguridad, debes cambiar tu contraseña temporal ahora.
+                    <strong>Acción Requerida:</strong> Por seguridad, cambia tu contraseña temporal.
                 </div>
             </div>
         )}
@@ -116,18 +101,18 @@ const Profile = () => {
                 </div>
 
                 <hr style={{margin: '20px 0', borderTop: '1px solid #eee'}}/>
-                <h3 className="section-title" style={{fontSize: '1rem', marginBottom:'10px', color: forceChange ? '#c2410c' : 'inherit'}}>Cambiar Contraseña</h3>
+                <h3 className="section-title" style={{fontSize: '1rem', marginBottom:'10px', color: forceChange ? '#c2410c' : 'inherit'}}>Seguridad</h3>
 
                 <div className="form-group">
                     <div className="input-wrapper">
                         <Lock className="input-icon" size={20} />
-                        <input type="password" placeholder="Nueva contraseña" className="form-input" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} required={forceChange} style={forceChange ? {borderColor:'#fdba74', background:'#fff7ed'} : {}} />
+                        <input type="password" placeholder="Nueva contraseña" className="form-input" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} required={forceChange} />
                     </div>
                 </div>
                 <div className="form-group">
                     <div className="input-wrapper">
                         <Lock className="input-icon" size={20} />
-                        <input type="password" placeholder="Confirmar nueva contraseña" className="form-input" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} required={forceChange} style={forceChange ? {borderColor:'#fdba74', background:'#fff7ed'} : {}} />
+                        <input type="password" placeholder="Confirmar nueva contraseña" className="form-input" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} required={forceChange} />
                     </div>
                 </div>
 

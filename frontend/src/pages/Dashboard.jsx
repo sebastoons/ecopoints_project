@@ -8,7 +8,7 @@ const Dashboard = () => {
   const [data, setData] = useState(null);
   
   useEffect(() => {
-    const user = localStorage.getItem('user');
+    const user = sessionStorage.getItem('user');
     // Enviamos el usuario para obtener SUS datos
     api.get(`/api/dashboard/?username=${user}`)
          .then(res => setData(res.data))

@@ -19,8 +19,10 @@ const Tasks = () => {
           const res = await api.post('/api/task/complete/', { task_id: taskId });
           if(res.data.success) {
               showToast(res.data.message, "success");
+              // --- MAGIA AQUÍ: Filtramos la tarea completada del array visualmente ---
+              setTasks(prevTasks => prevTasks.filter(t => t.id !== taskId));
           }
-      } catch (error) { // Cambiado 'err' por 'error' y usado abajo
+      } catch (error) {
           console.error(error);
           showToast("Error al completar la tarea", "error");
       }
@@ -28,7 +30,7 @@ const Tasks = () => {
 
   const getIcon = (title) => {
       const t = title.toLowerCase();
-      if(t.includes('botella') || t.includes('caja')) return <Recycle size={24} />;
+      if(t.includes('botella') || t.includes('caja') || t.includes('vidrio')) return <Recycle size={24} />;
       if(t.includes('ropa')) return <Shirt size={24} />;
       return <ShoppingBag size={24} />;
   };
@@ -57,7 +59,7 @@ const Tasks = () => {
                     </button>
                </div>
            )) : (
-             <p style={{textAlign: 'center', color: '#999'}}>No hay tareas disponibles.</p>
+             <p style={{textAlign: 'center', color: '#999', marginTop:'20px'}}>¡Todo listo por hoy! No quedan tareas.</p>
            )}
        </div>
       </div>

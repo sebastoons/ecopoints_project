@@ -88,7 +88,7 @@ const AddCustomTask = () => {
     }
     
     setLoading(true);
-    const userEmail = localStorage.getItem('user');
+    const userEmail = sessionStorage.getItem('user');
 
     try {
       const res = await api.post('/api/custom-task/', {

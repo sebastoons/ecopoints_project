@@ -12,9 +12,9 @@ const Login = () => {
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-      // Limpiar al entrar (garantiza re-login si expiró)
+      // Limpiamos AMBOS almacenamientos para evitar conflictos antiguos
       sessionStorage.clear();
-      localStorage.clear(); // Limpiamos local por si quedó algo viejo
+      localStorage.clear(); 
   }, []);
 
   const handleChange = (e) => setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -23,11 +23,15 @@ const Login = () => {
     e.preventDefault();
     setLoading(true);
     try {
-      const payload = { email: formData.email.trim().toLowerCase(), password: formData.password };
+      const payload = {
+          email: formData.email.trim().toLowerCase(),
+          password: formData.password
+      };
+
       const response = await api.post('/api/login/', payload);
       
       if (response.data.success) {
-        // CAMBIO: Guardar en sessionStorage
+        // --- CAMBIO CLAVE: USAR SESSIONSTORAGE ---
         sessionStorage.setItem('token', response.data.access);
         sessionStorage.setItem('user', response.data.username);
         const isAdmin = response.data.is_staff;
@@ -35,17 +39,23 @@ const Login = () => {
 
         if (response.data.must_change_password) {
             sessionStorage.setItem('forceChange', 'true');
-            showToast("⚠️ Cambia tu contraseña temporal.", "info");
+            showToast("⚠️ Por seguridad, cambia tu contraseña.", "info");
             navigate('/profile'); 
             return;
         }
 
-        showToast(`¡Hola, ${response.data.name}!`, "success");
-        navigate(isAdmin && role === 'admin' ? '/admin-dashboard' : '/dashboard');
+        showToast(`¡Hola de nuevo, ${response.data.name || 'Usuario'}!`, "success");
+        
+        if (isAdmin && role === 'admin') {
+            navigate('/admin-dashboard'); 
+        } else {
+            navigate('/dashboard');
+        }
       }
     } catch (err) {
-      const msg = err.response?.data?.error || "Error de conexión.";
-      showToast(msg, "error");
+      console.error(err);
+      const errorMsg = err.response?.data?.error || "Credenciales incorrectas o error de conexión.";
+      showToast(errorMsg, "error");
     } finally {
       setLoading(false);
     }
