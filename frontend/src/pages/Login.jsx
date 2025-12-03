@@ -7,7 +7,7 @@ import { User, Lock, Mail, ShieldCheck } from 'lucide-react';
 const Login = () => {
   const navigate = useNavigate();
   const { showToast } = useToast();
-  const [role, setRole] = useState('user'); // Solo visual, el backend decide el rol real
+  const [role, setRole] = useState('user'); 
   const [formData, setFormData] = useState({ email: '', password: '' });
   const [loading, setLoading] = useState(false);
 
@@ -20,25 +20,28 @@ const Login = () => {
       const response = await api.post('/api/login/', formData);
       
       if (response.data.success) {
-        // 1. Guardamos DATOS CRÍTICOS
-        localStorage.setItem('token', response.data.access); // El JWT
+        localStorage.setItem('token', response.data.access);
         localStorage.setItem('user', response.data.username);
-        
-        // 2. Verificamos si es Admin real (viene del backend)
         const isAdmin = response.data.is_staff;
         localStorage.setItem('isAdmin', isAdmin); 
 
-        showToast(`¡Hola de nuevo, ${response.data.name || 'Administrador'}!`, "success");
+        // NUEVA LÓGICA: Cambio de contraseña forzado
+        if (response.data.must_change_password) {
+            showToast("⚠️ Debes cambiar tu contraseña temporal por seguridad.", "info");
+            navigate('/profile?forceChange=true'); 
+            return; // Detenemos aquí para no redirigir a dashboard
+        }
+
+        showToast(`¡Hola de nuevo, ${response.data.name || 'Usuario'}!`, "success");
         
-        // 3. Redirección Inteligente
         if (isAdmin && role === 'admin') {
-            navigate('/admin-dashboard'); // <--- CAMBIO AQUÍ (antes /admin-panel)
+            navigate('/admin-dashboard'); 
         } else {
             navigate('/dashboard');
         }
       }
     } catch (err) {
-      console.error(err);
+      console.error("Error de login:", err);
       showToast("Credenciales incorrectas. Intenta de nuevo.", "error");
     } finally {
       setLoading(false);

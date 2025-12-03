@@ -6,6 +6,7 @@ class Profile(models.Model):
     points = models.IntegerField(default=0)
     co2_saved = models.FloatField(default=0.0)
     level = models.CharField(max_length=50, default="Eco-Iniciado")
+    must_change_password = models.BooleanField(default=False) # <--- NUEVO CAMPO
     
     def __str__(self):
         return f"{self.user.username} - {self.points} pts"
@@ -25,7 +26,6 @@ class Task(models.Model):
     title = models.CharField(max_length=200)
     points = models.IntegerField()
     description = models.CharField(max_length=50, default="Fácil")
-    # Agregamos choices aquí
     icon_type = models.CharField(max_length=50, default="recycle", choices=ICON_CHOICES)
     
     def __str__(self):

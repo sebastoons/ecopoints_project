@@ -8,6 +8,8 @@ from django.core.mail import send_mail
 from rest_framework_simplejwt.tokens import RefreshToken
 from django.db.models import Sum, Count
 from django.db.models.functions import ExtractWeekDay
+import secrets # Para generar contraseña segura
+import string
 
 from .models import Task, Profile, UserTask
 from .serializers import TaskSerializer, UserSerializer, UserUpdateSerializer
@@ -41,20 +43,21 @@ def register_user(request):
             first_name=data.get('name', '')
         )
         Profile.objects.create(user=user, points=0, level="Eco-Iniciado")
-        seed_database() # Asegurar tareas base
+        seed_database() 
         
+        # CORREO DE BIENVENIDA REAL
         try:
             send_mail(
-                '¡Bienvenido a EcoPoints!',
-                f'Hola {user.first_name}, gracias por unirte.',
-                'noreply@ecopoints.app',
+                '¡Bienvenido a EcoPoints! 🌿',
+                f'Hola {user.first_name},\n\nGracias por unirte a la comunidad que cuida el planeta. ¡Empieza a registrar tus acciones hoy y gana puntos!\n\nSaludos,\nEl equipo EcoPoints.',
+                None, # Usa DEFAULT_FROM_EMAIL
                 [user.email],
                 fail_silently=True,
             )
         except:
             pass 
 
-        return Response({'success': True, 'message': 'Usuario creado'})
+        return Response({'success': True, 'message': 'Usuario creado y notificado'})
     except Exception as e:
         return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
@@ -64,67 +67,144 @@ def login_user(request):
     email = data.get('email')
     password = data.get('password')
     
+    # Lógica inteligente: intenta por username=email, luego por email real
     user = authenticate(username=email, password=password)
+    if user is None:
+        try:
+            user_obj = User.objects.get(email=email)
+            user = authenticate(username=user_obj.username, password=password)
+        except User.DoesNotExist:
+            pass
     
     if user is not None:
-        # Generar Token JWT
+        if not user.is_active:
+             return Response({'error': 'Cuenta suspendida. Contacte al administrador.'}, status=status.HTTP_403_FORBIDDEN)
+
         refresh = RefreshToken.for_user(user)
         
+        # Verificar cambio forzado
+        must_change = False
+        if hasattr(user, 'profile'):
+            must_change = user.profile.must_change_password
+
         return Response({
             'success': True,
             'username': user.username,
-            'name': user.first_name,
-            'is_staff': user.is_staff,  # Para saber si es Admin
+            'name': user.first_name or "Usuario",
+            'is_staff': user.is_staff,
+            'must_change_password': must_change, # <--- ENVIAR FLAG
             'access': str(refresh.access_token),
             'refresh': str(refresh),
         })
     else:
         return Response({'error': 'Credenciales inválidas'}, status=status.HTTP_401_UNAUTHORIZED)
 
-# --- ZONA ADMINISTRADOR (NUEVA) ---
+# --- GESTIÓN DE PERFIL ---
 
 @api_view(['GET', 'PUT'])
-@permission_classes([IsAuthenticated, IsAdminUser])  # Solo Admins
-def admin_manage_users(request):
+@permission_classes([IsAuthenticated])
+def user_profile(request):
+    user = request.user 
+
+    if request.method == 'GET':
+        serializer = UserSerializer(user)
+        return Response(serializer.data)
+    
+    elif request.method == 'PUT':
+        serializer = UserUpdateSerializer(user, data=request.data, partial=True)
+        if serializer.is_valid():
+            serializer.save()
+            new_pass = request.data.get('new_password')
+            if new_pass:
+                user.set_password(new_pass)
+                # Si cambia la contraseña, quitamos la obligación
+                if hasattr(user, 'profile'):
+                    user.profile.must_change_password = False
+                    user.profile.save()
+                user.save()
+            return Response({'success': True, 'message': 'Perfil actualizado'})
+        return Response(serializer.errors, status=400)
+
+@api_view(['POST'])
+def recover_password(request):
+    email = request.data.get('email')
+    try:
+        user = User.objects.get(email=email)
+        
+        # 1. Generar contraseña temporal (8 caracteres alfanuméricos)
+        alphabet = string.ascii_letters + string.digits
+        temp_password = ''.join(secrets.choice(alphabet) for i in range(8))
+        
+        # 2. Guardar en usuario
+        user.set_password(temp_password)
+        user.save()
+        
+        # 3. Marcar cambio obligatorio
+        if not hasattr(user, 'profile'):
+            Profile.objects.create(user=user)
+        user.profile.must_change_password = True
+        user.profile.save()
+        
+        # 4. Enviar correo
+        subject = 'Recuperación de Contraseña - EcoPoints'
+        message = f"""
+        Hola {user.first_name},
+
+        Hemos recibido una solicitud para restablecer tu contraseña.
+        
+        Tu contraseña temporal es: {temp_password}
+        
+        Úsala para iniciar sesión. El sistema te pedirá cambiarla inmediatamente por seguridad.
+        
+        Si no solicitaste esto, ignora este correo.
+        """
+        
+        send_mail(subject, message, None, [email], fail_silently=False)
+        return Response({'success': True, 'message': 'Correo enviado con instrucciones.'})
+    except User.DoesNotExist:
+        return Response({'success': True, 'message': 'Si el correo existe, se enviaron instrucciones.'}) # Seguridad
+    except Exception as e:
+        return Response({'error': 'Error enviando correo'}, status=500)
+
+# --- ZONA ADMINISTRADOR ---
+
+@api_view(['GET', 'PUT', 'DELETE']) # Agregamos DELETE
+@permission_classes([IsAuthenticated, IsAdminUser])
+def admin_manage_users(request, user_id=None):
     if request.method == 'GET':
         users = User.objects.all().select_related('profile')
         data = []
         for u in users:
-            # Evitar error si el admin no tiene perfil creado aún
-            try:
-                level = u.profile.level
-            except:
-                level = "Admin/Sin Perfil"
-
+            try: level = u.profile.level
+            except: level = "Admin/Sin Perfil"
             data.append({
-                "id": u.id,
-                "name": u.first_name,
-                "email": u.email,
-                "is_active": u.is_active,
-                "level": level,
-                "last_login": u.last_login
+                "id": u.id, "name": u.first_name, "email": u.email,
+                "is_active": u.is_active, "level": level, "last_login": u.last_login
             })
         return Response(data)
 
     elif request.method == 'PUT':
-        # Activar/Desactivar usuarios
-        user_id = request.data.get('user_id')
-        action = request.data.get('action') 
-        
+        target_id = request.data.get('user_id')
+        try:
+            user = User.objects.get(id=target_id)
+            if user == request.user: return Response({'error': 'No puedes autodesactivarte'}, 400)
+            user.is_active = not user.is_active
+            user.save()
+            msg = "activado" if user.is_active else "suspendido"
+            return Response({'success': True, 'message': f'Usuario {msg}.'})
+        except: return Response({'error': 'Usuario no encontrado'}, 404)
+
+    elif request.method == 'DELETE': # Lógica de eliminar
         try:
             user = User.objects.get(id=user_id)
-            if action == 'toggle_active':
-                # No permitir que un admin se desactive a sí mismo
-                if user == request.user:
-                    return Response({'error': 'No puedes desactivar tu propia cuenta'}, status=400)
-                
-                user.is_active = not user.is_active
-                user.save()
-                estado = "activado" if user.is_active else "suspendido"
-                return Response({'success': True, 'message': f'Usuario {estado}.'})
+            if user.is_superuser: return Response({'error': 'No se puede borrar superadmin'}, 400)
+            if user == request.user: return Response({'error': 'No puedes borrarte a ti mismo'}, 400)
+            user.delete()
+            return Response({'success': True, 'message': 'Usuario eliminado permanentemente'})
         except User.DoesNotExist:
-            return Response({'error': 'Usuario no encontrado'}, status=404)
+            return Response({'error': 'Usuario no encontrado'}, 404)
 
+# ... (Mantener admin_create_task, admin_dashboard_stats, admin_task_detail, get_dashboard_data, get_tasks, get_ranking, create_custom_task IGUALES)
 @api_view(['POST'])
 @permission_classes([IsAuthenticated, IsAdminUser])
 def admin_create_task(request):
@@ -137,18 +217,14 @@ def admin_create_task(request):
 @api_view(['GET'])
 @permission_classes([IsAuthenticated, IsAdminUser])
 def admin_dashboard_stats(request):
-    # 1. Totales Globales
     total_points = Profile.objects.aggregate(Sum('points'))['points__sum'] or 0
     total_co2 = Profile.objects.aggregate(Sum('co2_saved'))['co2_saved__sum'] or 0
     
-    # 2. Gráfico: Tareas por día de la semana
-    # Django ExtractWeekDay: 1=Domingo, 2=Lunes, ..., 7=Sábado (Depende de la BD, ajustaremos en frontend)
     activity = UserTask.objects.annotate(weekday=ExtractWeekDay('completed_at'))\
                                .values('weekday')\
                                .annotate(count=Count('id'))\
                                .order_by('weekday')
     
-    # Formatear para Recharts
     days_map = {1: 'Dom', 2: 'Lun', 3: 'Mar', 4: 'Mié', 5: 'Jue', 6: 'Vie', 7: 'Sáb'}
     chart_data = [{"day": days_map[item['weekday']], "tasks": item['count']} for item in activity]
 
@@ -176,35 +252,6 @@ def admin_task_detail(request, task_id):
     elif request.method == 'DELETE':
         task.delete()
         return Response({'success': True, 'message': 'Tarea eliminada correctamente'})
-
-# --- PERFIL Y OTROS ---
-
-@api_view(['GET', 'PUT'])
-@permission_classes([IsAuthenticated])  # Protegemos el perfil
-def user_profile(request):
-    # Usamos request.user gracias al token
-    user = request.user 
-
-    if request.method == 'GET':
-        serializer = UserSerializer(user)
-        return Response(serializer.data)
-    
-    elif request.method == 'PUT':
-        serializer = UserUpdateSerializer(user, data=request.data, partial=True)
-        if serializer.is_valid():
-            serializer.save()
-            new_pass = request.data.get('new_password')
-            if new_pass:
-                user.set_password(new_pass)
-                user.save()
-            return Response({'success': True, 'message': 'Perfil actualizado'})
-        return Response(serializer.errors, status=400)
-
-@api_view(['POST'])
-def recover_password(request):
-    email = request.data.get('email')
-    # Lógica simulada de recuperación
-    return Response({'success': True, 'message': f'Si el correo existe, enviamos instrucciones a {email}'})
 
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
@@ -258,7 +305,6 @@ def create_custom_task(request):
         points = points_map.get(material_type, 5) * quantity
         
         task_name = f"Reciclaje: {material_type}"
-        # Buscamos o creamos la tarea para tener referencia
         task_obj, _ = Task.objects.get_or_create(title=task_name, defaults={'points': points, 'icon_type': 'recycle'})
         
         UserTask.objects.create(user=user, task=task_obj)
