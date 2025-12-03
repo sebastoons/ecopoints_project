@@ -1,6 +1,6 @@
 import React, { useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Link, useLocation, useNavigate } from 'react-router-dom';
-import { Home, ListChecks, PlusCircle, Trophy, User, LayoutDashboard, Users, ListTodo, Shield } from 'lucide-react';
+import { Home, ListChecks, PlusCircle, Trophy, User, LayoutDashboard, Users, ListTodo } from 'lucide-react';
 import Login from './pages/Login';
 import Register from './pages/Register';
 import Recovery from './pages/Recovery';
@@ -9,74 +9,55 @@ import Tasks from './pages/Tasks';
 import Ranking from './pages/Ranking';
 import Profile from './pages/Profile';
 import AddCustomTask from './pages/AddCustomTask';
-// Nuevas Vistas Admin
 import AdminDashboard from './pages/AdminDashboard';
 import AdminTasks from './pages/AdminTasks';
 import AdminUsers from './pages/AdminUsers';
-
 import { ToastProvider, useToast } from './context/ToastContext';
 import './App.css';
 
-// --- COMPONENTE DE CIERRE AUTOMÁTICO (SEGURIDAD) ---
+// --- LOGOUT AUTOMÁTICO (15 min inactividad) ---
 const AutoLogoutHandler = () => {
     const navigate = useNavigate();
     const { showToast } = useToast();
 
     useEffect(() => {
         let timer;
-
         const logout = () => {
-            // Limpiamos credenciales
-            localStorage.removeItem('user');
-            localStorage.removeItem('token');
-            localStorage.removeItem('isAdmin');
-            
-            showToast("Sesión cerrada por inactividad (15 min)", "info");
-            navigate('/');
+            if (sessionStorage.getItem('token')) {
+                sessionStorage.clear(); // Limpia session storage
+                showToast("Sesión cerrada por inactividad (15 min)", "info");
+                navigate('/');
+            }
         };
 
-        // Definimos la función dentro del efecto para evitar errores de dependencias
         const resetTimer = () => {
             if (timer) clearTimeout(timer);
-            
-            // Solo activamos el timer si hay un usuario logueado (tiene token)
-            if (localStorage.getItem('token')) {
-                // 15 minutos = 15 * 60 * 1000 milisegundos
+            if (sessionStorage.getItem('token')) {
                 timer = setTimeout(logout, 15 * 60 * 1000); 
             }
         };
 
-        const handleActivity = () => resetTimer();
-
-        // Eventos que consideramos "actividad"
-        const events = ['mousedown', 'keydown', 'scroll', 'touchstart', 'click'];
-
-        // Escuchamos los eventos
-        events.forEach(event => window.addEventListener(event, handleActivity));
-        
-        // Iniciamos el timer al montar
+        const events = ['mousedown', 'keydown', 'scroll', 'click', 'touchstart'];
+        events.forEach(event => window.addEventListener(event, resetTimer));
         resetTimer();
 
-        // Limpieza al desmontar
         return () => {
             if (timer) clearTimeout(timer);
-            events.forEach(event => window.removeEventListener(event, handleActivity));
+            events.forEach(event => window.removeEventListener(event, resetTimer));
         };
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [navigate]); 
+    }, [navigate, showToast]); // Dependencias corregidas
 
     return null; 
 };
 
-// --- BARRA DE NAVEGACIÓN ---
+// --- NAVEGACIÓN ---
 const BottomNav = () => {
   const location = useLocation();
   const hideNavPaths = ['/', '/register', '/recovery'];
-  const isAdmin = localStorage.getItem('isAdmin') === 'true'; // Verificamos si es admin
+  const isAdmin = sessionStorage.getItem('isAdmin') === 'true'; // USAR SESSION STORAGE
   
   if (hideNavPaths.includes(location.pathname)) return null;
 
-  // --- MENÚ PARA ADMINISTRADOR ---
   if (isAdmin) {
       return (
         <div className="bottom-nav">
@@ -99,7 +80,6 @@ const BottomNav = () => {
       );
   }
 
-  // --- MENÚ PARA USUARIO NORMAL ---
   return (
     <div className="bottom-nav">
       <Link to="/dashboard" className={`nav-item ${location.pathname === '/dashboard' ? 'active' : ''}`}>
@@ -108,14 +88,9 @@ const BottomNav = () => {
       <Link to="/tasks" className={`nav-item ${location.pathname === '/tasks' ? 'active' : ''}`}>
         <ListChecks size={24} /> <span>Tareas</span>
       </Link>
-      
-      {/* Botón Central para Usuario */}
       <Link to="/add" className="nav-item">
-        <div className="nav-fab">
-          <PlusCircle size={32} />
-        </div>
+        <div className="nav-fab"><PlusCircle size={32} /></div>
       </Link>
-
       <Link to="/ranking" className={`nav-item ${location.pathname === '/ranking' ? 'active' : ''}`}>
         <Trophy size={24} /> <span>Ranking</span>
       </Link>
@@ -129,17 +104,15 @@ const BottomNav = () => {
 const AppContent = () => {
     const location = useLocation();
     const navigate = useNavigate();
-    const { showToast } = useToast(); // Asegúrate de importar useToast arriba
+    const { showToast } = useToast();
     
     const isAuthPage = ['/', '/register', '/recovery'].includes(location.pathname);
     const containerClass = isAuthPage ? 'auth-mode' : 'app-mode with-nav';
 
-    // --- VIGILANTE DE CONTRASEÑA OBLIGATORIA ---
     useEffect(() => {
-        const mustChange = localStorage.getItem('forceChange') === 'true';
-        const token = localStorage.getItem('token');
+        const mustChange = sessionStorage.getItem('forceChange') === 'true'; // USAR SESSION STORAGE
+        const token = sessionStorage.getItem('token'); // USAR SESSION STORAGE
 
-        // Si está logueado, debe cambiar pass, y NO está en profile...
         if (token && mustChange && location.pathname !== '/profile') {
             showToast("Debes cambiar tu contraseña para continuar.", "error");
             navigate('/profile', { replace: true });
@@ -148,10 +121,8 @@ const AppContent = () => {
 
     return (
         <div className={`app-container ${containerClass}`}>
-            <AutoLogoutHandler /> 
-            
+            <AutoLogoutHandler />
             <Routes>
-                {/* ... tus rutas existentes ... */}
                 <Route path="/" element={<Login />} />
                 <Route path="/register" element={<Register />} />
                 <Route path="/recovery" element={<Recovery />} />
@@ -164,7 +135,6 @@ const AppContent = () => {
                 <Route path="/admin-tasks" element={<AdminTasks />} />
                 <Route path="/admin-users" element={<AdminUsers />} />
             </Routes>
-            
             <BottomNav />
         </div>
     );

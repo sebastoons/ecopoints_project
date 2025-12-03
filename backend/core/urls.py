@@ -17,10 +17,14 @@ urlpatterns = [
     path('api/ranking/', views.get_ranking),
     path('api/custom-task/', views.create_custom_task),
     
-    # --- RUTAS ADMINISTRADOR ---
-    path('api/admin/users/', views.admin_manage_users),       # GET (Listar), PUT (Suspender)
-    path('api/admin/users/<int:user_id>/', views.admin_manage_users), # DELETE (Eliminar)
-    path('api/admin/tasks/create/', views.admin_create_task), # Crear
-    path('api/admin/tasks/<int:task_id>/', views.admin_task_detail), # Editar/Borrar
-    path('api/admin/dashboard/', views.admin_dashboard_stats), # Stats
+    # --- NUEVOS ENDPOINTS ---
+    path('api/task/complete/', views.complete_standard_task), 
+    path('api/history/', views.get_user_history),   
+              
+    # Admin
+    path('api/admin/users/', views.admin_manage_users),
+    path('api/admin/users/<int:user_id>/', views.admin_manage_users),
+    path('api/admin/tasks/create/', views.admin_create_task),
+    path('api/admin/tasks/<int:task_id>/', views.admin_task_detail),
+    path('api/admin/dashboard/', views.admin_dashboard_stats),
 ]

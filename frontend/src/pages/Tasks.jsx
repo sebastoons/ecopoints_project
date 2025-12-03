@@ -1,16 +1,30 @@
 import React, { useState, useEffect } from 'react';
 import api from '../api';
-import { PlusCircle, Recycle, Shirt, ShoppingBag, Check } from 'lucide-react';
+import { PlusCircle, Recycle, Shirt, ShoppingBag } from 'lucide-react';
 import Header from '../components/Header';
+import { useToast } from '../context/ToastContext';
 
 const Tasks = () => {
   const [tasks, setTasks] = useState([]);
+  const { showToast } = useToast();
   
   useEffect(() => {
     api.get('/api/tasks/')
        .then(res => setTasks(res.data))
        .catch(err => console.error(err));
   }, []);
+
+  const handleComplete = async (taskId) => {
+      try {
+          const res = await api.post('/api/task/complete/', { task_id: taskId });
+          if(res.data.success) {
+              showToast(res.data.message, "success");
+          }
+      } catch (error) { // Cambiado 'err' por 'error' y usado abajo
+          console.error(error);
+          showToast("Error al completar la tarea", "error");
+      }
+  };
 
   const getIcon = (title) => {
       const t = title.toLowerCase();
@@ -34,10 +48,11 @@ const Tasks = () => {
                        <div className="item-subtitle">★ {task.points} Puntos</div>
                    </div>
                     <button 
-                      className="btn btn-task-action" // Agregamos una clase específica
+                      onClick={() => handleComplete(task.id)}
+                      className="btn btn-task-action" 
                       style={{ width: 'auto', background: 'var(--primary-dark)', color: 'white', fontSize: '0.85rem' }}
                     >
-                      <PlusCircle size={16} /> {/* Quitamos el margin inline aquí, lo manejaremos con CSS */}
+                      <PlusCircle size={16} />
                       <span className="btn-text">Completar</span>
                     </button>
                </div>
