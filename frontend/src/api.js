@@ -6,15 +6,26 @@ const api = axios.create({
   baseURL: API_URL,
 });
 
-// INTERCEPTOR: Usamos sessionStorage en lugar de localStorage
+// Request interceptor
 api.interceptors.request.use((config) => {
   const token = sessionStorage.getItem('token');
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
   }
   return config;
-}, (error) => {
-  return Promise.reject(error);
-});
+}, (error) => Promise.reject(error));
+
+// Response interceptor (NUEVO)
+api.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    // Si el backend devuelve 401 (No autorizado), limpiamos sesión
+    if (error.response && error.response.status === 401) {
+      sessionStorage.clear();
+      window.location.href = '/'; // Redirección forzada al login
+    }
+    return Promise.reject(error);
+  }
+);
 
 export default api;

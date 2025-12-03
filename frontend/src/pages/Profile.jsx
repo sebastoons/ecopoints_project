@@ -13,20 +13,31 @@ const Profile = () => {
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   
-  // --- CAMBIO: LEER DE SESSIONSTORAGE ---
-  const currentUserEmail = sessionStorage.getItem('user');
+  // Obtenemos los datos directos del storage
+  const token = sessionStorage.getItem('token');
   const forceChange = sessionStorage.getItem('forceChange') === 'true';
 
   useEffect(() => {
-    if (!currentUserEmail) { 
+    // Si no hay token, no está logueado -> expulsar
+    if (!token) { 
         navigate('/'); 
         return; 
     }
     
+    // Cargar perfil
     api.get('/api/profile/')
-      .then(res => { setUserData(res.data); setLoading(false); })
-      .catch(err => { console.error(err); setLoading(false); });
-  }, [currentUserEmail, navigate]);
+      .then(res => { 
+          setUserData(res.data); 
+          setLoading(false); 
+      })
+      .catch(err => { 
+          console.error(err);
+          // Si el error es 401 (token expirado), el interceptor o App.jsx lo manejará,
+          // pero aquí dejamos de cargar para no bloquear la UI en blanco.
+          setLoading(false);
+          // Opcional: showToast("No se pudo cargar el perfil", "error");
+      });
+  }, [token, navigate]);
 
   const handleSave = async (e) => {
     e.preventDefault();
@@ -46,8 +57,8 @@ const Profile = () => {
       if (res.data.success) {
         showToast("Perfil actualizado correctamente", "success");
         setNewPassword(''); setConfirmPassword('');
-        sessionStorage.removeItem('forceChange'); // Liberar bloqueo
-        navigate('/dashboard'); // Redirigir al dashboard al guardar
+        sessionStorage.removeItem('forceChange'); 
+        navigate('/dashboard'); 
       }
     } catch (err) {
       console.error(err);
@@ -60,7 +71,7 @@ const Profile = () => {
     navigate('/');
   };
 
-  if (loading) return <div className="page-content">Cargando...</div>;
+  if (loading) return <div className="page-content" style={{textAlign:'center', marginTop:'50px'}}>Cargando perfil...</div>;
 
   return (
     <>
@@ -96,7 +107,7 @@ const Profile = () => {
                     <label className="form-label">Correo</label>
                     <div className="input-wrapper">
                         <Mail className="input-icon" size={20} />
-                        <input type="email" className="form-input" value={userData.email} onChange={(e) => setUserData({...userData, email: e.target.value})} disabled={forceChange} />
+                        <input type="email" className="form-input" value={userData.email} onChange={(e) => setUserData({...userData, email: e.target.value})} disabled={true} style={{background: '#f3f4f6'}} />
                     </div>
                 </div>
 
@@ -122,7 +133,7 @@ const Profile = () => {
             </form>
         </div>
 
-        <button onClick={handleLogout} className="btn btn-danger">
+        <button onClick={handleLogout} className="btn btn-danger" style={{marginBottom: '80px'}}>
             <LogOut size={18} /> Cerrar Sesión
         </button>
       </div>
