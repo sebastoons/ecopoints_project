@@ -8,4 +8,17 @@ const api = axios.create({
   baseURL: API_URL,
 });
 
+// --- INTERCEPTOR DE SEGURIDAD ---
+// Antes de enviar cualquier petición, revisamos si hay un token guardado
+api.interceptors.request.use((config) => {
+  const token = localStorage.getItem('token');
+  if (token) {
+    // Si existe, lo agregamos en la cabecera Authorization
+    config.headers.Authorization = `Bearer ${token}`;
+  }
+  return config;
+}, (error) => {
+  return Promise.reject(error);
+});
+
 export default api;

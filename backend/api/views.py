@@ -1,9 +1,14 @@
-from rest_framework.decorators import api_view
+from rest_framework.decorators import api_view, permission_classes
+from rest_framework.permissions import IsAuthenticated, IsAdminUser
 from rest_framework.response import Response
 from rest_framework import status
 from django.contrib.auth.models import User
 from django.contrib.auth import authenticate
-from django.core.mail import send_mail  # <--- Importar para emails
+from django.core.mail import send_mail
+from rest_framework_simplejwt.tokens import RefreshToken
+from django.db.models import Sum, Count
+from django.db.models.functions import ExtractWeekDay
+
 from .models import Task, Profile, UserTask
 from .serializers import TaskSerializer, UserSerializer, UserUpdateSerializer
 
@@ -36,21 +41,20 @@ def register_user(request):
             first_name=data.get('name', '')
         )
         Profile.objects.create(user=user, points=0, level="Eco-Iniciado")
-        seed_database() # Asegurar tareas
+        seed_database() # Asegurar tareas base
         
-        # ENVIAR CORREO DE BIENVENIDA
         try:
             send_mail(
                 '¡Bienvenido a EcoPoints!',
-                f'Hola {user.first_name}, gracias por unirte a la comunidad que cuida el planeta. ¡Empieza a registrar tus acciones hoy!',
+                f'Hola {user.first_name}, gracias por unirte.',
                 'noreply@ecopoints.app',
                 [user.email],
                 fail_silently=True,
             )
         except:
-            pass # No detener el registro si falla el correo
+            pass 
 
-        return Response({'success': True, 'message': 'Usuario creado y correo enviado'})
+        return Response({'success': True, 'message': 'Usuario creado'})
     except Exception as e:
         return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
@@ -59,73 +63,155 @@ def login_user(request):
     data = request.data
     email = data.get('email')
     password = data.get('password')
+    
     user = authenticate(username=email, password=password)
     
     if user is not None:
-        return Response({'success': True, 'username': user.username, 'name': user.first_name})
+        # Generar Token JWT
+        refresh = RefreshToken.for_user(user)
+        
+        return Response({
+            'success': True,
+            'username': user.username,
+            'name': user.first_name,
+            'is_staff': user.is_staff,  # Para saber si es Admin
+            'access': str(refresh.access_token),
+            'refresh': str(refresh),
+        })
     else:
         return Response({'error': 'Credenciales inválidas'}, status=status.HTTP_401_UNAUTHORIZED)
 
-# --- GESTIÓN DE PERFIL Y CONTRASEÑA ---
+# --- ZONA ADMINISTRADOR (NUEVA) ---
 
 @api_view(['GET', 'PUT'])
-def user_profile(request):
-    email = request.GET.get('email') or request.data.get('username')
+@permission_classes([IsAuthenticated, IsAdminUser])  # Solo Admins
+def admin_manage_users(request):
+    if request.method == 'GET':
+        users = User.objects.all().select_related('profile')
+        data = []
+        for u in users:
+            # Evitar error si el admin no tiene perfil creado aún
+            try:
+                level = u.profile.level
+            except:
+                level = "Admin/Sin Perfil"
+
+            data.append({
+                "id": u.id,
+                "name": u.first_name,
+                "email": u.email,
+                "is_active": u.is_active,
+                "level": level,
+                "last_login": u.last_login
+            })
+        return Response(data)
+
+    elif request.method == 'PUT':
+        # Activar/Desactivar usuarios
+        user_id = request.data.get('user_id')
+        action = request.data.get('action') 
+        
+        try:
+            user = User.objects.get(id=user_id)
+            if action == 'toggle_active':
+                # No permitir que un admin se desactive a sí mismo
+                if user == request.user:
+                    return Response({'error': 'No puedes desactivar tu propia cuenta'}, status=400)
+                
+                user.is_active = not user.is_active
+                user.save()
+                estado = "activado" if user.is_active else "suspendido"
+                return Response({'success': True, 'message': f'Usuario {estado}.'})
+        except User.DoesNotExist:
+            return Response({'error': 'Usuario no encontrado'}, status=404)
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated, IsAdminUser])
+def admin_create_task(request):
+    serializer = TaskSerializer(data=request.data)
+    if serializer.is_valid():
+        serializer.save()
+        return Response({'success': True, 'message': 'Tarea creada exitosamente'}, status=201)
+    return Response(serializer.errors, status=400)
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated, IsAdminUser])
+def admin_dashboard_stats(request):
+    # 1. Totales Globales
+    total_points = Profile.objects.aggregate(Sum('points'))['points__sum'] or 0
+    total_co2 = Profile.objects.aggregate(Sum('co2_saved'))['co2_saved__sum'] or 0
+    
+    # 2. Gráfico: Tareas por día de la semana
+    # Django ExtractWeekDay: 1=Domingo, 2=Lunes, ..., 7=Sábado (Depende de la BD, ajustaremos en frontend)
+    activity = UserTask.objects.annotate(weekday=ExtractWeekDay('completed_at'))\
+                               .values('weekday')\
+                               .annotate(count=Count('id'))\
+                               .order_by('weekday')
+    
+    # Formatear para Recharts
+    days_map = {1: 'Dom', 2: 'Lun', 3: 'Mar', 4: 'Mié', 5: 'Jue', 6: 'Vie', 7: 'Sáb'}
+    chart_data = [{"day": days_map[item['weekday']], "tasks": item['count']} for item in activity]
+
+    return Response({
+        "total_points": total_points,
+        "total_co2": round(total_co2, 2),
+        "chart_data": chart_data
+    })
+
+@api_view(['PUT', 'DELETE'])
+@permission_classes([IsAuthenticated, IsAdminUser])
+def admin_task_detail(request, task_id):
     try:
-        user = User.objects.get(username=email)
-    except User.DoesNotExist:
-        return Response({'error': 'Usuario no encontrado'}, status=status.HTTP_404_NOT_FOUND)
+        task = Task.objects.get(id=task_id)
+    except Task.DoesNotExist:
+        return Response({'error': 'Tarea no encontrada'}, status=404)
+
+    if request.method == 'PUT':
+        serializer = TaskSerializer(task, data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response({'success': True, 'message': 'Tarea actualizada'})
+        return Response(serializer.errors, status=400)
+
+    elif request.method == 'DELETE':
+        task.delete()
+        return Response({'success': True, 'message': 'Tarea eliminada correctamente'})
+
+# --- PERFIL Y OTROS ---
+
+@api_view(['GET', 'PUT'])
+@permission_classes([IsAuthenticated])  # Protegemos el perfil
+def user_profile(request):
+    # Usamos request.user gracias al token
+    user = request.user 
 
     if request.method == 'GET':
         serializer = UserSerializer(user)
         return Response(serializer.data)
     
     elif request.method == 'PUT':
-        # Actualizar Datos Básicos
         serializer = UserUpdateSerializer(user, data=request.data, partial=True)
         if serializer.is_valid():
             serializer.save()
-            
-            # Actualizar Contraseña si viene en el request
-            new_password = request.data.get('new_password')
-            if new_password and len(new_password) > 0:
-                user.set_password(new_password)
+            new_pass = request.data.get('new_password')
+            if new_pass:
+                user.set_password(new_pass)
                 user.save()
-
-            return Response({'success': True, 'message': 'Perfil y contraseña actualizados', 'data': serializer.data})
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+            return Response({'success': True, 'message': 'Perfil actualizado'})
+        return Response(serializer.errors, status=400)
 
 @api_view(['POST'])
 def recover_password(request):
     email = request.data.get('email')
-    try:
-        user = User.objects.get(email=email)
-        # Simulamos envío de código o nueva contraseña
-        temp_code = "123456" 
-        
-        send_mail(
-            'Recuperación de Contraseña - EcoPoints',
-            f'Hola, tu código de recuperación temporal es: {temp_code}. Por favor ingresa a tu perfil y cambia tu contraseña.',
-            'noreply@ecopoints.app',
-            [email],
-            fail_silently=False,
-        )
-        return Response({'success': True, 'message': f'Correo enviado a {email}'})
-    except User.DoesNotExist:
-        # Por seguridad, no decimos si el correo no existe, pero aquí para dev:
-        return Response({'error': 'Correo no encontrado'}, status=status.HTTP_404_NOT_FOUND)
-
-# --- DATOS ---
+    # Lógica simulada de recuperación
+    return Response({'success': True, 'message': f'Si el correo existe, enviamos instrucciones a {email}'})
 
 @api_view(['GET'])
+@permission_classes([IsAuthenticated])
 def get_dashboard_data(request):
-    email = request.GET.get('username')
-    if not email:
-        return Response({"points": 0, "co2": 0, "level": "Invitado", "progress": 0, "weekly_data": []})
+    user = request.user
     try:
-        user = User.objects.get(username=email)
         profile = user.profile
-        
         data = {
             "points": profile.points,
             "co2": round(profile.co2_saved, 2),
@@ -134,17 +220,15 @@ def get_dashboard_data(request):
             "weekly_data": [
                 {"name": "Lun", "points": 10, "co2": 2},
                 {"name": "Mar", "points": 25, "co2": 5},
-                {"name": "Mie", "points": 15, "co2": 3},
-                {"name": "Jue", "points": 40, "co2": 8},
             ]
         }
         return Response(data)
     except:
-         return Response({"points": 0, "co2": 0, "level": "Error", "progress": 0, "weekly_data": []})
+         return Response({"points": 0, "co2": 0, "level": "Error"}, status=400)
 
 @api_view(['GET'])
+@permission_classes([IsAuthenticated])
 def get_tasks(request):
-    # Si no hay tareas, las crea. Si ya hay tareas (creadas en Admin), devuelve esas.
     seed_database()
     tasks = Task.objects.all()
     serializer = TaskSerializer(tasks, many=True)
@@ -153,44 +237,36 @@ def get_tasks(request):
 @api_view(['GET'])
 def get_ranking(request):
     profiles = Profile.objects.select_related('user').order_by('-points')[:10]
-    ranking_data = []
+    data = []
     for p in profiles:
-        ranking_data.append({
-            "id": p.user.id,
-            "name": p.user.first_name or p.user.username.split('@')[0],
+        data.append({
+            "name": p.user.first_name,
             "points": p.points
         })
-    return Response(ranking_data)
+    return Response(data)
 
 @api_view(['POST'])
+@permission_classes([IsAuthenticated])
 def create_custom_task(request):
-    email = request.data.get('username')
-    # code = request.data.get('code') # No lo usamos para lógica, solo registro
-    quantity = int(request.data.get('quantity', 1))
+    user = request.user
     material_type = request.data.get('material_type')
+    quantity = int(request.data.get('quantity', 1))
 
     try:
-        user = User.objects.get(username=email)
         profile = user.profile
-        
         points_map = {'plastic': 10, 'glass': 15, 'paper': 5, 'metal': 20}
-        points_unit = points_map.get(material_type, 5)
-        total_points = points_unit * quantity
-
+        points = points_map.get(material_type, 5) * quantity
+        
         task_name = f"Reciclaje: {material_type}"
-        task_obj, _ = Task.objects.get_or_create(title=task_name, defaults={'points': points_unit, 'description': 'Escaneo', 'icon_type': 'recycle'})
+        # Buscamos o creamos la tarea para tener referencia
+        task_obj, _ = Task.objects.get_or_create(title=task_name, defaults={'points': points, 'icon_type': 'recycle'})
         
         UserTask.objects.create(user=user, task=task_obj)
-
-        profile.points += total_points
+        
+        profile.points += points
         profile.co2_saved += (quantity * 0.15)
-        if profile.points > 500: profile.level = "Eco-Guardián"
-        if profile.points > 1500: profile.level = "Eco-Maestro"
         profile.save()
-
-        return Response({'success': True, 'message': f'+{total_points} EcoPoints agregados', 'new_points': profile.points})
-
-    except User.DoesNotExist:
-        return Response({'error': 'Usuario no encontrado'}, status=status.HTTP_404_NOT_FOUND)
+        
+        return Response({'success': True, 'message': f'+{points} puntos agregados'})
     except Exception as e:
-        return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
+        return Response({'error': str(e)}, status=400)

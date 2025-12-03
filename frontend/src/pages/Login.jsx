@@ -1,13 +1,13 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import api from '../api'; 
-import { useToast } from '../context/ToastContext'; // <--- Importamos el hook
+import { useToast } from '../context/ToastContext';
 import { User, Lock, Mail, ShieldCheck } from 'lucide-react';
 
 const Login = () => {
   const navigate = useNavigate();
-  const { showToast } = useToast(); // <--- Inicializamos
-  const [role, setRole] = useState('user');
+  const { showToast } = useToast();
+  const [role, setRole] = useState('user'); // Solo visual, el backend decide el rol real
   const [formData, setFormData] = useState({ email: '', password: '' });
   const [loading, setLoading] = useState(false);
 
@@ -18,14 +18,28 @@ const Login = () => {
     setLoading(true);
     try {
       const response = await api.post('/api/login/', formData);
+      
       if (response.data.success) {
+        // 1. Guardamos DATOS CRÍTICOS
+        localStorage.setItem('token', response.data.access); // El JWT
         localStorage.setItem('user', response.data.username);
-        showToast(`¡Hola de nuevo, ${response.data.name || 'Usuario'}!`, "success"); // Mensaje Toast
-        navigate('/dashboard');
+        
+        // 2. Verificamos si es Admin real (viene del backend)
+        const isAdmin = response.data.is_staff;
+        localStorage.setItem('isAdmin', isAdmin); 
+
+        showToast(`¡Hola de nuevo, ${response.data.name || 'Administrador'}!`, "success");
+        
+        // 3. Redirección Inteligente
+        if (isAdmin && role === 'admin') {
+            navigate('/admin-dashboard'); // <--- CAMBIO AQUÍ (antes /admin-panel)
+        } else {
+            navigate('/dashboard');
+        }
       }
     } catch (err) {
       console.error(err);
-      showToast("Credenciales incorrectas. Intenta de nuevo.", "error"); // Mensaje Toast
+      showToast("Credenciales incorrectas. Intenta de nuevo.", "error");
     } finally {
       setLoading(false);
     }
