@@ -25,7 +25,8 @@ const AdminTasks = () => {
 
   // 2. Ahora sí podemos llamarla, porque ya existe en la línea anterior
   useEffect(() => { 
-      loadTasks();  
+      loadTasks(); 
+      
   }, []);
 
   // --- CREAR ---

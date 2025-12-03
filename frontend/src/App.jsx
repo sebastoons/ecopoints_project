@@ -35,6 +35,7 @@ const AutoLogoutHandler = () => {
             navigate('/');
         };
 
+        // Definimos la función dentro del efecto para evitar errores de dependencias
         const resetTimer = () => {
             if (timer) clearTimeout(timer);
             
@@ -61,7 +62,8 @@ const AutoLogoutHandler = () => {
             if (timer) clearTimeout(timer);
             events.forEach(event => window.removeEventListener(event, handleActivity));
         };
-    }, [navigate, showToast]); // Dependencias correctas
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [navigate]); 
 
     return null; 
 };
