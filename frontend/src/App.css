@@ -716,3 +716,38 @@ body {
   align-items: center;
   justify-content: center;
 }
+
+/* --- CORRECCIÓN GRÁFICO (Chart Warning) --- */
+.chart-container {
+  min-width: 0; /* Vital para que flexbox no rompa el ancho */
+  width: 100%;
+}
+
+/* --- RESPONSIVIDAD BOTÓN TAREAS --- */
+.btn-task-action {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 8px 16px;
+  transition: all 0.3s ease;
+}
+
+/* Solo en celulares (menos de 768px) */
+@media (max-width: 768px) {
+  .btn-task-action {
+    width: 40px !important;  /* Forzamos círculo */
+    height: 40px !important;
+    padding: 0 !important;   /* Sin relleno extra */
+    border-radius: 50% !important; /* Totalmente redondo */
+  }
+
+  .btn-task-action .btn-text {
+    display: none; /* Ocultamos la palabra "Completar" */
+  }
+  
+  /* Ajustamos el icono para que quede centrado */
+  .btn-task-action svg {
+    margin: 0 !important;
+  }
+}

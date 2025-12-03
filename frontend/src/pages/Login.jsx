@@ -39,10 +39,14 @@ const Login = () => {
         const isAdmin = response.data.is_staff;
         localStorage.setItem('isAdmin', isAdmin); 
 
+        // Guardamos la bandera de seguridad
         if (response.data.must_change_password) {
-            showToast("⚠️ Por seguridad, cambia tu contraseña.", "info");
-            navigate('/profile?forceChange=true'); 
-            return;
+          localStorage.setItem('forceChange', 'true'); // <--- GUARDAMOS ESTO
+          showToast("⚠️ Por seguridad, cambia tu contraseña.", "info");
+          navigate('/profile'); 
+          return;
+        } else {
+          localStorage.removeItem('forceChange'); // Limpiamos si no es necesario
         }
 
         showToast(`¡Hola de nuevo, ${response.data.name}!`, "success");

@@ -33,9 +33,13 @@ const Tasks = () => {
                        <div className="item-title" style={{ fontSize: '1rem' }}>{task.title}</div>
                        <div className="item-subtitle">★ {task.points} Puntos</div>
                    </div>
-                   <button className="btn" style={{ width: 'auto', padding: '8px 16px', background: 'var(--primary-dark)', color: 'white', fontSize: '0.85rem' }}>
-                       <PlusCircle size={16} style={{ marginRight: '4px' }}/> Completar
-                   </button>
+                    <button 
+                      className="btn btn-task-action" // Agregamos una clase específica
+                      style={{ width: 'auto', background: 'var(--primary-dark)', color: 'white', fontSize: '0.85rem' }}
+                    >
+                      <PlusCircle size={16} /> {/* Quitamos el margin inline aquí, lo manejaremos con CSS */}
+                      <span className="btn-text">Completar</span>
+                    </button>
                </div>
            )) : (
              <p style={{textAlign: 'center', color: '#999'}}>No hay tareas disponibles.</p>

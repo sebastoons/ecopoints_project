@@ -128,27 +128,38 @@ const BottomNav = () => {
 
 const AppContent = () => {
     const location = useLocation();
+    const navigate = useNavigate();
+    const { showToast } = useToast(); // Asegúrate de importar useToast arriba
+    
     const isAuthPage = ['/', '/register', '/recovery'].includes(location.pathname);
     const containerClass = isAuthPage ? 'auth-mode' : 'app-mode with-nav';
 
+    // --- VIGILANTE DE CONTRASEÑA OBLIGATORIA ---
+    useEffect(() => {
+        const mustChange = localStorage.getItem('forceChange') === 'true';
+        const token = localStorage.getItem('token');
+
+        // Si está logueado, debe cambiar pass, y NO está en profile...
+        if (token && mustChange && location.pathname !== '/profile') {
+            showToast("Debes cambiar tu contraseña para continuar.", "error");
+            navigate('/profile', { replace: true });
+        }
+    }, [location, navigate, showToast]);
+
     return (
         <div className={`app-container ${containerClass}`}>
-            <AutoLogoutHandler /> {/* Inyectamos el vigilante de inactividad */}
+            <AutoLogoutHandler /> 
             
             <Routes>
-                {/* Públicas */}
+                {/* ... tus rutas existentes ... */}
                 <Route path="/" element={<Login />} />
                 <Route path="/register" element={<Register />} />
                 <Route path="/recovery" element={<Recovery />} />
-                
-                {/* Rutas Protegidas - Usuario Normal */}
                 <Route path="/dashboard" element={<Dashboard />} />
                 <Route path="/tasks" element={<Tasks />} />
                 <Route path="/ranking" element={<Ranking />} />
                 <Route path="/add" element={<AddCustomTask />} /> 
                 <Route path="/profile" element={<Profile />} />
-                
-                {/* Rutas Protegidas - Administrador */}
                 <Route path="/admin-dashboard" element={<AdminDashboard />} />
                 <Route path="/admin-tasks" element={<AdminTasks />} />
                 <Route path="/admin-users" element={<AdminUsers />} />

@@ -52,10 +52,14 @@ const Profile = () => {
       
       if (res.data.success) {
         showToast("Perfil actualizado correctamente", "success");
-        setNewPassword(''); setConfirmPassword('');
-        setForceChange(false); // Quitamos la alerta visualmente
-        // Limpiamos el parámetro de la URL sin recargar la página
-        navigate('/profile', { replace: true });
+        setNewPassword(''); 
+        setConfirmPassword('');
+
+        // LIBERAR AL USUARIO
+        setForceChange(false);
+        localStorage.removeItem('forceChange'); // <--- IMPORTANTE: Borrar la marca del localStorage
+
+        navigate('/dashboard'); // Ahora sí lo dejamos ir al inicio
       }
     } catch (err) {
       console.error(err);

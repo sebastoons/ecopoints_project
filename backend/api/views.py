@@ -245,10 +245,17 @@ def get_tasks(request):
 
 @api_view(['GET'])
 @permission_classes([AllowAny]) 
-@authentication_classes([]) # Ranking público
+@authentication_classes([]) 
 def get_ranking(request):
-    profiles = Profile.objects.select_related('user').order_by('-points')[:10]
-    data = [{"name": p.user.first_name, "points": p.points} for p in profiles]
+    # FILTRO: Excluir superusuarios (is_superuser=False) y staff (is_staff=False)
+    profiles = Profile.objects.filter(user__is_superuser=False, user__is_staff=False).select_related('user').order_by('-points')[:10]
+    
+    data = []
+    for p in profiles:
+        data.append({
+            "name": p.user.first_name,
+            "points": p.points
+        })
     return Response(data)
 
 @api_view(['POST'])
