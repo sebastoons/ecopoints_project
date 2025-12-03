@@ -288,15 +288,16 @@ def admin_task_detail(request, task_id):
 @api_view(['GET'])
 @permission_classes([IsAuthenticated, IsAdminUser])
 def admin_dashboard_stats(request):
+    # 1. Totales Generales
     tp = Profile.objects.aggregate(Sum('points'))['points__sum'] or 0
     tc = Profile.objects.aggregate(Sum('co2_saved'))['co2_saved__sum'] or 0
     
-    # --- NUEVO: GRÁFICO GLOBAL PARA ADMIN ---
-    # Sin filtro de usuario = Todos los datos globales
+    # 2. Datos del Gráfico (Usando la función compartida que creamos)
+    # Al pasar queryset_filter=None, trae los datos de TODOS los usuarios (Global)
     chart_data = get_weekly_chart_data(queryset_filter=None)
     
     return Response({
         "total_points": tp, 
         "total_co2": round(tc, 2), 
-        "chart_data": chart_data # Datos diarios para el gráfico
+        "chart_data": chart_data # <--- Esto ahora contiene [{name, points, co2}, ...]
     })
