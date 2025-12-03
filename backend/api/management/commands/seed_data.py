@@ -1,17 +1,39 @@
 from django.core.management.base import BaseCommand
 from django.contrib.auth.models import User
 from api.models import Profile, Task
-import random
+import os
 
 class Command(BaseCommand):
-    help = 'Carga datos iniciales (Usuarios ficticios y Tareas)'
+    help = 'Carga datos iniciales y Superusuario'
 
     def handle(self, *args, **kwargs):
         self.stdout.write("Iniciando carga de datos...")
 
-        # 1. Crear Tareas Predeterminadas (Administrador)
+        # --- 1. CREAR SUPERUSUARIO AUTOMÁTICO (NUBE) ---
+        # Usa variables de entorno si existen, sino usa valores por defecto
+        ADMIN_EMAIL = os.environ.get('DJANGO_SUPERUSER_EMAIL', 'admin@ecopoints.cl')
+        ADMIN_PASS = os.environ.get('DJANGO_SUPERUSER_PASSWORD', 'Eco123456')
+        
+        if not User.objects.filter(email=ADMIN_EMAIL).exists():
+            # Crear superusuario usando el email como username para evitar conflictos
+            User.objects.create_superuser(
+                username=ADMIN_EMAIL, 
+                email=ADMIN_EMAIL,
+                password=ADMIN_PASS,
+                first_name="Admin"
+            )
+            # Crear perfil para el admin para evitar errores en el frontend
+            admin_user = User.objects.get(email=ADMIN_EMAIL)
+            if not Profile.objects.filter(user=admin_user).exists():
+                Profile.objects.create(user=admin_user, points=0, level="Administrador")
+
+            self.stdout.write(self.style.SUCCESS(f"✅ Superusuario {ADMIN_EMAIL} creado."))
+        else:
+            self.stdout.write(f"ℹ️ El usuario {ADMIN_EMAIL} ya existe.")
+
+        # --- 2. TAREAS ---
         tasks_data = [
-            {"title": "Reciclar 2 botellas de plástico", "points": 50, "description": "Fácil", "icon_type": "recycle"},
+            {"title": "Reciclar 2 botellas de plástico", "points": 50, "description": "Fácil", "icon_type": "plastic"},
             {"title": "Juntar 3 cajas de cartón", "points": 30, "description": "Fácil", "icon_type": "box"},
             {"title": "Llevar ropa a punto limpio", "points": 100, "description": "Medio", "icon_type": "shirt"},
             {"title": "Usar bolsas reutilizables", "points": 20, "description": "Diario", "icon_type": "bag"},
@@ -21,30 +43,4 @@ class Command(BaseCommand):
         for t in tasks_data:
             Task.objects.get_or_create(title=t['title'], defaults=t)
         
-        self.stdout.write(self.style.SUCCESS(f"Se aseguraron {len(tasks_data)} tareas base."))
-
-        # 2. Crear Usuarios Ficticios para Ranking
-        fake_users = [
-            {"name": "Juan Pérez", "email": "juan@fake.com", "points": 1500, "level": "Eco-Maestro"},
-            {"name": "María González", "email": "maria@fake.com", "points": 1250, "level": "Eco-Experto"},
-            {"name": "Carlos Ruiz", "email": "carlos@fake.com", "points": 980, "level": "Eco-Guerrero"},
-            {"name": "Ana López", "email": "ana@fake.com", "points": 850, "level": "Eco-Guerrero"},
-            {"name": "Luisa Fernández", "email": "luisa@fake.com", "points": 450, "level": "Eco-Iniciado"},
-        ]
-
-        for u in fake_users:
-            if not User.objects.filter(username=u['email']).exists():
-                user = User.objects.create_user(
-                    username=u['email'],
-                    email=u['email'],
-                    password="password123",
-                    first_name=u['name']
-                )
-                # Crear o actualizar perfil
-                Profile.objects.filter(user=user).update(
-                    points=u['points'],
-                    level=u['level'],
-                    co2_saved=u['points'] * 0.2
-                )
-        
-        self.stdout.write(self.style.SUCCESS(f"Se crearon {len(fake_users)} usuarios ficticios."))
+        self.stdout.write(self.style.SUCCESS(f"✅ Se aseguraron {len(tasks_data)} tareas base."))
